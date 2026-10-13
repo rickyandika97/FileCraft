@@ -1,0 +1,41 @@
+# macOS and Windows metadata
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.build-venv/
+/build/
+/dist/
+/release/
+/.local/
+*.dmg
+*.app/
+/*.spec
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Downloaded PDF helpers (installed automatically on first PDF use)
+/.pdf-tools/
+
+# Local save history, exports, and temporary validation files
+/.filecraft-save-locations.json*
+/Exports/
+/tmp/
+/tests/save-location-check/
+
+# Distribution archives
+/*.zip
+
+# Local secrets and editor settings
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/

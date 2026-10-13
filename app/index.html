@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FileCraft</title>
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" id="home-link" href="/" aria-label="FileCraft home"><img class="brand-mark" src="/icon.svg" width="48" height="48" alt=""><span>FileCraft<small>YOUR PHOTO &amp; PDF TOOLKIT</small></span></a>
+    <span class="local-badge"><i></i> Local on your computer</span>
+  </header>
+  <main id="tool-home" class="tool-home">
+    <h1>What would you like to do?</h1>
+    <p class="home-intro">Choose a tool to get started. You can work on many files at once.</p>
+    <div class="tool-choices">
+      <button id="choose-resize" class="tool-choice">
+        <span class="tool-symbol" aria-hidden="true">↓</span><strong>Make files smaller</strong>
+        <span>Shrink photos and PDFs for uploading.<br>For example, make each file under 3 MB.</span><span class="choice-action">Choose this tool →</span>
+      </button>
+      <button id="choose-watermark" class="tool-choice">
+        <span class="tool-symbol stamp-symbol" aria-hidden="true">▣</span><strong>Crop &amp; watermark</strong>
+        <span>Make square photos and add your logo.<br>Includes the existing export size settings.</span><span class="choice-action">Choose this tool →</span>
+      </button>
+      <button id="choose-pdf" class="tool-choice">
+        <span class="tool-symbol" aria-hidden="true">≡</span><strong>Combine &amp; split PDFs</strong>
+        <span>Join PDFs and photos, move pages around,<br>or save just the pages you need.</span><span class="choice-action">Choose this tool →</span>
+      </button>
+    </div>
+    <p class="home-note">Your original files stay untouched. Processing happens on this computer.</p>
+  </main>
+  <main id="pdf-tool" class="pdf-layout" hidden>
+    <div class="resize-heading"><button id="pdf-back" class="secondary tool-back">← Choose another tool</button><h1>Combine &amp; split PDFs</h1><p>Add PDFs or photos. Choose your pages and save new PDF copies.</p></div>
+    <aside class="resize-settings pdf-settings">
+      <h2><span class="resize-step">1</span> Choose your pages</h2>
+      <p>Tick the pages you want. Drag a page or use its arrow buttons to change the order.</p>
+      <label class="pdf-label" for="pdf-range">Or enter page numbers</label>
+      <input id="pdf-range" class="pdf-text" type="text" placeholder="For example: 1, 3, 5 or 1-5" aria-describedby="pdf-range-help">
+      <p id="pdf-range-help" class="resize-note">Numbers refer to the order shown on the right. Leave blank to choose all pages.</p>
+      <button id="pdf-apply-range" class="secondary">Choose these pages</button>
+      <h2><span class="resize-step">2</span> How to save</h2>
+      <label class="pdf-label" for="pdf-output">Save as</label>
+      <select id="pdf-output" class="pdf-text"><option value="combined">One PDF (chosen pages)</option><option value="separate">Separate PDFs (one per page)</option><option value="groups">Separate PDFs (page ranges)</option></select>
+      <div id="pdf-groups-controls" hidden><label class="pdf-label" for="pdf-groups">One line for each new PDF</label><textarea id="pdf-groups" class="pdf-text" rows="4" placeholder="1-5&#10;6-10&#10;1, 3, 5" aria-describedby="pdf-groups-help"></textarea><p id="pdf-groups-help" class="resize-note">Each line uses the page numbers shown on the right. This option uses your ranges instead of the ticks.</p></div>
+      <label class="pdf-label" for="pdf-name">Name for your new PDF</label><input id="pdf-name" class="pdf-text" type="text" value="combined.pdf" maxlength="120">
+      <p id="pdf-plan" class="resize-note" role="status">Add files to get started.</p>
+      <button id="pdf-save" class="primary resize-save" disabled>Save new PDF</button><button id="pdf-stop" class="secondary" hidden>Stop after this PDF</button>
+      <p class="resize-note">Your originals stay untouched. Photos fill their own pages without cropping. This tool does not apply an upload size limit.</p>
+    </aside>
+    <section class="pdf-workspace" aria-label="PDF pages">
+      <div class="resize-workspace-heading"><h2>Add PDFs and photos</h2><div class="resize-add-actions"><button id="pdf-folder" class="secondary">Add folder</button><button id="pdf-add" class="primary">＋ Add files</button></div></div>
+      <input id="pdf-input" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple hidden><input id="pdf-folder-input" type="file" webkitdirectory multiple hidden>
+      <p class="resize-note">PDF, PNG and JPG. First-time PDF setup needs internet; your files stay on this computer.</p>
+      <div id="pdf-sources" class="pdf-sources"></div>
+      <div class="pdf-toolbar"><strong id="pdf-count">0 pages</strong><div><button id="pdf-all" class="secondary">Choose all</button><button id="pdf-none" class="secondary">Choose none</button><button id="pdf-clear" class="secondary">Clear files</button></div></div>
+      <div id="pdf-status" class="resize-status" role="status" aria-live="polite" hidden><strong id="pdf-status-title"></strong><p id="pdf-progress-label" class="batch-progress-label" hidden></p><progress id="pdf-progress" aria-labelledby="pdf-progress-label" max="1" value="0" hidden></progress><p id="pdf-status-detail"></p><ul id="pdf-results" class="pdf-results"></ul><button id="pdf-open" class="secondary" hidden>Open export folder ↗</button></div>
+      <ul id="pdf-errors" class="resize-errors" role="alert" hidden></ul>
+      <div id="pdf-empty" class="pdf-empty">Add PDFs or photos, or drop them here.<br>Each page will appear below so you can arrange it.</div>
+      <p class="resize-note">Click a page picture to open a larger preview.</p>
+      <div id="pdf-pages" class="pdf-pages"></div>
+
+    </section>
+  </main>
+  <main id="resize-tool" class="resize-layout" hidden>
+    <div class="resize-heading"><button id="resize-back" class="secondary tool-back">← Choose another tool</button><h1>Make files smaller</h1><p>Photos and PDFs. Keep the content and make new copies for uploading.</p></div>
+    <aside class="resize-settings">
+      <h2><span class="resize-step">1</span> Choose the upload limit</h2>
+      <p>Use the limit shown on the website you’re uploading to.</p>
+      <div id="resize-presets" role="group" aria-label="Maximum size for each file">
+        <button class="size-preset" data-bytes="10000000" aria-pressed="false"><strong>Under 10 MB</strong><span>For websites allowing larger files</span></button>
+        <button class="size-preset" data-bytes="5000000" aria-pressed="false"><strong>Under 5 MB</strong><span>For a medium upload limit</span></button>
+        <button class="size-preset selected" data-bytes="3000000" aria-pressed="true"><strong>Under 3 MB</strong><span>A good place to start</span></button>
+        <button class="size-preset" data-bytes="2000000" aria-pressed="false"><strong>Under 2 MB</strong><span>For a smaller upload limit</span></button>
+        <button id="resize-custom-preset" class="size-preset" aria-pressed="false"><strong>Custom</strong><span>Choose your own size limit</span></button>
+      </div>
+      <div id="resize-custom-controls" class="resize-custom-controls" hidden>
+        <label for="resize-custom">Maximum size per file <output id="resize-custom-value">3 MB</output></label>
+        <input id="resize-custom" type="range" min="0.1" max="20" step="0.1" value="3" aria-valuetext="Under 3 MB">
+        <div class="resize-custom-scale"><span>0.1 MB</span><span>20 MB</span></div>
+        <p>Move left for a smaller file. The saved copy may be smaller than the limit.</p>
+      </div>
+      <p id="resize-limit-hint" class="resize-note">Every saved file will be under 3 MB.</p>
+      <h2><span class="resize-step">3</span> Save your smaller files</h2>
+      <button id="resize-save" class="primary resize-save" disabled>Save smaller files</button>
+      <button id="resize-stop" class="secondary" hidden>Stop after this file</button>
+      <p class="resize-note">Files already below the limit are copied unchanged. Larger photos become JPGs; transparent areas become white. PDFs stay PDFs.</p><p class="resize-note">Some PDFs need a larger limit. First-time PDF setup needs an internet connection; your files stay on this computer.</p>
+    </aside>
+    <section class="resize-workspace" aria-label="Files to make smaller">
+      <div class="resize-add-heading"><h2><span class="resize-step">2</span> Add your files</h2><div class="resize-add-actions"><button id="resize-folder" class="secondary">Add folder</button><button id="resize-add" class="primary">＋ Add files</button></div></div>
+      <input id="resize-input" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple hidden><input id="resize-folder-input" type="file" webkitdirectory multiple hidden>
+      <button id="resize-empty" class="resize-empty"><span aria-hidden="true">＋</span><strong>Add files or drop them here</strong><span>You can choose several files at once.<br>PDF, JPG, PNG and WEBP</span></button>
+      <div id="resize-list" hidden>
+        <div class="resize-list-heading"><strong id="resize-count">0 files</strong><button id="resize-clear" class="secondary">Clear list</button></div>
+        <p class="resize-table-help">“Before” is the original file size. “After” shows the actual size once the new copy is saved.</p>
+        <div class="resize-table-wrap"><table class="resize-table"><caption class="visually-hidden">Before and after sizes for each file</caption><thead><tr><th scope="col">File</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">Result</th><th scope="col"><span class="visually-hidden">Remove</span></th></tr></thead><tbody id="resize-rows"></tbody></table></div>
+      </div>
+      <div id="resize-status" class="resize-status" role="status" aria-live="polite" hidden><strong id="resize-status-title"></strong><p id="resize-progress-label" class="batch-progress-label" hidden></p><progress id="resize-progress" aria-labelledby="resize-progress-label" max="1" value="0" hidden></progress><p id="resize-status-detail"></p><p id="resize-summary"></p><button id="resize-open" class="secondary" hidden>Open export folder ↗</button></div>
+      <ul id="resize-errors" class="resize-errors" role="alert" hidden></ul>
+      <p class="resize-original-note">Originals are never replaced. New copies go into a separate export folder.</p>
+    </section>
+  </main>
+  <main id="watermark-tool" class="layout" hidden>
+    <aside class="sidebar">
+      <button id="watermark-back" class="secondary tool-back">← Choose another tool</button>
+      <div class="sidebar-intro"><span class="eyebrow">THE FINISHING TOUCH</span><h1>A square.<br>Your signature.</h1><p>Crop your product photos and add your logo, all in one batch.</p></div>
+      <fieldset id="settings">
+        <section class="control-section">
+          <div class="section-heading"><span class="step">01</span><h2>Your logo</h2><button class="text-button" id="clear-logo" hidden>Remove</button></div>
+          <label class="logo-upload" id="logo-drop" for="logo-input"><span id="logo-placeholder"><span class="upload-symbol">＋</span><strong>Choose a logo</strong><small>Transparent PNG or SVG works best</small></span><img id="logo-thumb" hidden alt="Selected watermark logo"></label>
+          <input type="file" id="logo-input" class="visually-hidden" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+          <p class="logo-name" id="logo-name">Your logo is applied after the crop.</p>
+        </section>
+        <section class="control-section">
+          <div class="section-heading"><span class="step">02</span><h2>Watermark placement</h2></div>
+          <div class="corners" role="group" aria-label="Watermark corner">
+            <button data-corner="tl" class="corner selected" aria-pressed="true"><span class="corner-icon tl"></span>Top left</button>
+            <button data-corner="tr" class="corner" aria-pressed="false"><span class="corner-icon tr"></span>Top right</button>
+            <button data-corner="bl" class="corner" aria-pressed="false"><span class="corner-icon bl"></span>Bottom left</button>
+            <button data-corner="br" class="corner" aria-pressed="false"><span class="corner-icon br"></span>Bottom right</button>
+          </div>
+          <label class="slider-label" for="logo-size">Logo size <output id="logo-size-value">18%</output></label><input id="logo-size" type="range" min="3" max="50" value="18">
+          <label class="slider-label" for="logo-opacity">Opacity <output id="logo-opacity-value">80%</output></label><input id="logo-opacity" type="range" min="5" max="100" value="80">
+          <label class="slider-label" for="logo-margin">Edge margin <output id="logo-margin-value">4%</output></label><input id="logo-margin" type="range" min="0" max="12" step="0.5" value="4">
+        </section>
+        <section class="control-section export-settings">
+          <div class="section-heading"><span class="step">03</span><h2>Export</h2></div>
+          <div class="form-row"><label for="resolution">Square size</label><select id="resolution"><option value="original">Original crop size</option><option value="2000">Up to 2000 × 2000</option><option value="1600">Up to 1600 × 1600</option><option value="1200">Up to 1200 × 1200</option><option value="800">Up to 800 × 800</option></select></div>
+          <div class="form-row"><label for="format">File type</label><select id="format"><option value="jpg">JPG · high quality</option><option value="png">PNG · lossless</option></select></div>
+          <p class="quiet">Saved as new copies in a separate export folder.</p>
+        </section>
+      </fieldset>
+      <div class="export-actions"><button class="primary export-button" id="export" disabled>Export photos <span>↗</span></button><button class="text-button" id="cancel-export" hidden>Stop after this photo</button><p id="export-hint">Add photos and a logo to get started.</p></div>
+    </aside>
+    <section class="workspace">
+      <div class="workspace-heading"><div><span class="eyebrow">YOUR WORKSPACE</span><h2>Photos <span id="photo-count">0</span></h2></div><div class="add-actions"><button id="add-folder" class="secondary">Add folder</button><button id="add-photos" class="primary">＋ Add photos</button></div></div>
+      <input id="photos-input" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+      <input id="folder-input" type="file" webkitdirectory multiple hidden>
+      <div id="empty" class="empty-state" tabindex="0" role="button" aria-label="Choose photos or drop them here">
+        <div class="empty-art"><span class="art-photo back"></span><span class="art-photo front"><span class="art-square"></span></span><span class="art-plus">＋</span></div>
+        <h3>Give your photos a finishing touch.</h3><p>Drop photos or a folder here,<br>or choose photos to begin.</p><span class="empty-types">JPG, PNG &amp; WEBP · BATCH FRIENDLY</span>
+      </div>
+      <div id="editor" hidden>
+        <div class="preview-toolbar"><div class="tabs" role="tablist" aria-label="Preview mode"><button id="tab-final" role="tab" aria-selected="true" class="active">Final preview</button><button id="tab-crop" role="tab" aria-selected="false">Adjust crop</button></div><span class="square-badge">1:1 square crop</span></div>
+        <div class="canvas-stage" id="stage"><canvas id="preview" aria-label="Photo preview"></canvas><div id="preview-loading" hidden>Loading preview…</div></div>
+        <div class="preview-caption"><div><strong id="current-name"></strong><span id="current-dimensions"></span></div><button id="remove-photo" class="text-button">Remove photo</button></div>
+        <div class="crop-controls" id="crop-controls" hidden>
+          <p id="crop-help">Scroll to zoom. Drag the photo inside the square to choose what stays.</p>
+          <label class="slider-label" for="crop-zoom">Zoom <output id="crop-zoom-value">100%</output></label><input type="range" id="crop-zoom" min="1" max="5" value="1" step="0.01">
+          <label class="slider-label" for="crop-position">Crop position <output id="crop-position-value">Centered</output></label><div class="crop-row"><input type="range" id="crop-position" min="0" max="100" value="50" step="0.1"><button id="reset-crop" class="secondary">Reset crop</button></div>
+          <p class="quiet">This adjustment applies only to the selected photo.</p>
+        </div>
+        <div class="filmstrip-heading"><span id="review-count">All photos</span><button id="clear-photos" class="text-button">Clear all</button></div><div id="filmstrip" class="filmstrip" aria-label="Photos in this batch"></div>
+      </div>
+      <div id="status" class="status" role="status" aria-live="polite" hidden><div class="status-top"><strong id="status-title"></strong><span id="status-count"></span></div><p id="progress-label" class="batch-progress-label" hidden></p><progress id="progress" aria-labelledby="progress-label" max="100" value="0" hidden></progress><p id="status-detail"></p><button id="show-exports" class="secondary" hidden>Open export folder ↗</button><details id="error-details" hidden><summary>See photos that need attention</summary><ul id="error-list"></ul></details></div>
+      <footer class="workspace-footer"><span><i></i> Photos stay on this computer</span><span>Crop first. Stamp second.</span></footer>
+    </section>
+  </main>
+  <dialog id="pdf-preview-dialog" class="pdf-preview-dialog" aria-labelledby="pdf-preview-title" aria-describedby="pdf-preview-origin">
+    <div class="pdf-preview-heading"><div><h2 id="pdf-preview-title">Page preview</h2><p id="pdf-preview-origin"></p></div><button id="pdf-preview-close" class="secondary" autofocus>Close ✕</button></div>
+    <div id="pdf-preview-stage" class="pdf-preview-stage" aria-busy="false"><img id="pdf-preview-image" alt="" draggable="false"></div>
+    <p id="pdf-preview-message" class="pdf-preview-message" role="status" aria-live="polite"></p>
+    <div class="pdf-preview-controls"><button id="pdf-preview-previous" class="secondary">← Previous page</button><button id="pdf-preview-zoom" class="secondary" aria-pressed="false">Zoom in</button><button id="pdf-preview-next" class="secondary">Next page →</button></div>
+  </dialog>
+  <div class="drop-overlay" id="drop-overlay" hidden><div>Drop your files here<span>They’ll be added to your batch.</span></div></div>
+  <div id="toast" class="toast" role="alert" hidden></div>
+</body>
+</html>
