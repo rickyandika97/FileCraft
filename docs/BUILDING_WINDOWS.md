@@ -1,9 +1,9 @@
 # Build the Windows x64 app on a Mac
 
-FileCraft 1.0.3 is the renamed package built on 13 October 2026. Start with
+FileCraft 1.1.0 adds crop shape choices and updated tool icons. Start with
 [SESSION_HANDOFF.md](SESSION_HANDOFF.md) when resuming. The previous 1.0.2 package
 passed Windows 10 x64 diagnostics and user checks for all three tools, saving,
-and reopening. The renamed package needs a Windows launch check.
+and reopening. Version 1.1.0 needs a Windows launch check.
 
 This produces a portable ZIP with a native Windows `.exe` launcher, an isolated
 CPython 3.13.16 x64 runtime, pywebview and the PDF tools. It uses official Windows
@@ -38,9 +38,9 @@ files are copied into the Windows app.
 The script writes:
 
 - `dist/windows-x64/FileCraft/` — unpacked portable app.
-- `release/FileCraft-1.0.3-windows-x64-portable.zip` — copy this to Windows.
-- `release/FileCraft-1.0.3-windows-x64-source.zip` — matching source.
-- `release/FileCraft-1.0.3-windows-x64-SHA256SUMS.txt` — artifact checksums.
+- `release/FileCraft-1.1.0-windows-x64-portable.zip` — copy this to Windows.
+- `release/FileCraft-1.1.0-windows-x64-source.zip` — matching source.
+- `release/FileCraft-1.1.0-windows-x64-SHA256SUMS.txt` — artifact checksums.
 - `build/windows/` — downloads, compiler, and temporary packaging files.
 
 The launcher is unsigned and needs no administrator rights. Preferences and logs
@@ -57,6 +57,6 @@ preview/export round trip using the included Windows Python.
 
 Mac tests and PE file checks establish packaging evidence, not Windows execution
 or device compatibility. The supplied Windows 10 diagnostics and user workflow
-results apply to the previous 1.0.2 package. The renamed 1.0.3 package needs a
-Windows launch check; detailed checklist cases and Windows 11 remain unconfirmed.
+results apply to the previous 1.0.2 package. The 1.1.0 package needs a Windows
+launch check; detailed checklist cases and Windows 11 remain unconfirmed.
 See [the test record](SESSION_HANDOFF.md).

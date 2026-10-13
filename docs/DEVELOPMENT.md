@@ -1,11 +1,12 @@
 # Development and verification
 
 For build status, current workspace location and Windows results, read
-[SESSION_HANDOFF.md](SESSION_HANDOFF.md). The recorded Mac test evidence is
+[SESSION_HANDOFF.md](SESSION_HANDOFF.md). The prior 1.0.3 Mac test evidence is
 43 Python tests and 39 JavaScript tests passing. On 13 October 2026, the user
 supplied passing Windows 10 x64 diagnostics and confirmed all three tools, saving
-files, and reopening the previous 1.0.2 app. FileCraft 1.0.3 is a renamed build
-and needs a Windows launch check.
+files, and reopening the previous 1.0.2 app. Version 1.1.0 adds crop shape choices
+and updated tool icons. Its Mac signature and package archives were checked; tests
+and Windows device behavior still need verification.
 
 The source/browser version runs on Mac or Windows with Python 3.10+ and a modern
 browser. The Mac desktop build uses Python 3.14 and the pinned dependencies under
@@ -56,7 +57,7 @@ not personal exports.
 Automated tests and a successful build do not establish Windows or older-Mac
 device compatibility. The Mac app has native-window verification on macOS 15.6.1;
 the previous Windows 1.0.2 app has Windows 10 diagnostic and user workflow evidence.
-The renamed FileCraft 1.0.3 Windows package needs a launch check.
+The FileCraft 1.1.0 Windows package needs a launch check.
 Detailed checklist cases, Windows 11 and the Windows source launcher remain unconfirmed.
 See [BUILDING_WINDOWS.md](BUILDING_WINDOWS.md) and [TESTING_WINDOWS.md](TESTING_WINDOWS.md).
 

@@ -27,11 +27,11 @@ The Mac desktop app and Windows portable test build include PyMuPDF 1.28.2 and p
 
 1. Choose your logo. Transparent PNG is recommended; SVG, JPG, and WEBP also work. The logo is used as supplied, including any transparent padding.
 2. Add photos, choose a folder, or drop photos/folders into the workspace. Photos may be JPG, PNG, or WEBP. Folder selection includes supported photos in subfolders.
-3. Choose the watermark corner, size, opacity, and margin. These settings are remembered by the browser; the logo itself must be selected each time you launch a new session.
-4. Select a photo and open **Adjust crop**. The crop fills a fixed square frame so you can see the details clearly, with nearby content visible in the dimmed border. Scroll up over the photo to enlarge it, and down to zoom out, or use the **Zoom** slider (100–500%). Drag the photo underneath the frame to bring other parts into view, including in both directions when zoomed in. The position slider moves the crop along the photo’s longer edge. **Reset crop** restores the centered, full-size square. Adjustments affect only that photo, including square originals.
+3. Choose the crop shape (1:1, 16:9, 4:3, or the original photo shape), watermark corner, size, opacity, and margin. Your choices are remembered by the browser as defaults; the logo itself must be selected each time you launch a new session.
+4. Select a photo and open **Adjust crop**. The crop fills a frame in your chosen shape, with nearby content visible in the dimmed border. Scroll up over the photo to enlarge it, and down to zoom out, or use the **Zoom** slider (100–500%). Drag the photo underneath the frame to bring other parts into view. The position slider moves the crop along the photo’s movable direction. **Reset crop** restores the centered crop at its largest size for that shape. Adjustments affect only that photo, including photos that already match the selected shape.
 5. Choose output size and JPG or PNG, then click **Export photos** and choose a save folder.
 
-**Crop first, watermark second.** There is no padding or stretching. The square starts at the full shorter dimension of the source image; zooming in makes it smaller for a tighter crop. The final preview and export use the same crop. Output dimensions are limited to the selected crop’s pixels, so exports never upscale.
+**Crop first, watermark second.** There is no padding or stretching. The selected shape starts at the largest crop that fits the source; zooming in makes it smaller for a tighter crop. The final preview and export use the same crop. Output dimensions are limited to the selected crop’s pixels, so exports never upscale.
 
 ## Combine & split PDFs
 

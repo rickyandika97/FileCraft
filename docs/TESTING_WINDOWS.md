@@ -1,14 +1,14 @@
-FileCraft 1.0.3 — Windows x64 test build
+FileCraft 1.1.0 — Windows x64 test build
 
 For a 64-bit Intel/AMD PC running Windows 10 or Windows 11.
-Built on an Apple Silicon Mac. This renamed 1.0.3 package needs a Windows launch
+Built on an Apple Silicon Mac. This 1.1.0 package needs a Windows launch
 check. The previous 1.0.2 package passed Windows 10 x64 diagnostics, and the user
 confirmed all three tools, saving files, and reopening. See docs/SESSION_HANDOFF.md
 in the source download for the test record and unconfirmed cases.
 
 GET STARTED
 
-1. Copy FileCraft-1.0.3-windows-x64-portable.zip to your Windows PC.
+1. Copy FileCraft-1.1.0-windows-x64-portable.zip to your Windows PC.
 2. Right-click the ZIP and choose Extract All. Keep the entire folder together.
 3. Open FileCraft.exe in the extracted FileCraft folder.
    It should open its own window. Python and PDF tools are included.

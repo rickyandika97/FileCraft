@@ -22,11 +22,11 @@
         <span>Shrink photos and PDFs for uploading.<br>For example, make each file under 3 MB.</span><span class="choice-action">Choose this tool →</span>
       </button>
       <button id="choose-watermark" class="tool-choice">
-        <span class="tool-symbol stamp-symbol" aria-hidden="true">▣</span><strong>Crop &amp; watermark</strong>
-        <span>Make square photos and add your logo.<br>Includes the existing export size settings.</span><span class="choice-action">Choose this tool →</span>
+        <span class="tool-symbol stamp-symbol" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M17 6H8v9m23-9h9v9M8 33v9h9m23-9v9h-9"/><path d="M16 16h16v16H16z"/></svg></span><strong>Crop &amp; watermark</strong>
+        <span>Crop photos to a shape you choose and add your logo.<br>Includes the existing export size settings.</span><span class="choice-action">Choose this tool →</span>
       </button>
       <button id="choose-pdf" class="tool-choice">
-        <span class="tool-symbol" aria-hidden="true">≡</span><strong>Combine &amp; split PDFs</strong>
+        <span class="tool-symbol pdf-symbol" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M5 10h14v20H5zM29 18h14v20H29z"/><path d="M8 15h7m-7 5h7m17 3h7m-7 5h7"/><path d="M18 34h6m-3-3 3 3-3 3M30 12h-6m3 3-3-3 3-3"/></svg></span><strong>Combine &amp; split PDFs</strong>
         <span>Join PDFs and photos, move pages around,<br>or save just the pages you need.</span><span class="choice-action">Choose this tool →</span>
       </button>
     </div>
@@ -105,7 +105,7 @@
   <main id="watermark-tool" class="layout" hidden>
     <aside class="sidebar">
       <button id="watermark-back" class="secondary tool-back">← Choose another tool</button>
-      <div class="sidebar-intro"><span class="eyebrow">THE FINISHING TOUCH</span><h1>A square.<br>Your signature.</h1><p>Crop your product photos and add your logo, all in one batch.</p></div>
+      <div class="sidebar-intro"><span class="eyebrow">THE FINISHING TOUCH</span><h1>Set the frame.<br>Add your mark.</h1><p>Choose a crop shape, then add your logo to your photos in one batch.</p></div>
       <fieldset id="settings">
         <section class="control-section">
           <div class="section-heading"><span class="step">01</span><h2>Your logo</h2><button class="text-button" id="clear-logo" hidden>Remove</button></div>
@@ -127,7 +127,8 @@
         </section>
         <section class="control-section export-settings">
           <div class="section-heading"><span class="step">03</span><h2>Export</h2></div>
-          <div class="form-row"><label for="resolution">Square size</label><select id="resolution"><option value="original">Original crop size</option><option value="2000">Up to 2000 × 2000</option><option value="1600">Up to 1600 × 1600</option><option value="1200">Up to 1200 × 1200</option><option value="800">Up to 800 × 800</option></select></div>
+          <div class="form-row"><label for="aspect-ratio">Crop shape</label><select id="aspect-ratio"><option value="1:1">1:1 square</option><option value="16:9">16:9 wide</option><option value="4:3">4:3</option><option value="original">Original photo shape</option></select></div>
+          <div class="form-row"><label for="resolution">Maximum long edge</label><select id="resolution"><option value="original">Original crop size</option><option value="2000">Up to 2000 px</option><option value="1600">Up to 1600 px</option><option value="1200">Up to 1200 px</option><option value="800">Up to 800 px</option></select></div>
           <div class="form-row"><label for="format">File type</label><select id="format"><option value="jpg">JPG · high quality</option><option value="png">PNG · lossless</option></select></div>
           <p class="quiet">Saved as new copies in a separate export folder.</p>
         </section>
@@ -143,11 +144,11 @@
         <h3>Give your photos a finishing touch.</h3><p>Drop photos or a folder here,<br>or choose photos to begin.</p><span class="empty-types">JPG, PNG &amp; WEBP · BATCH FRIENDLY</span>
       </div>
       <div id="editor" hidden>
-        <div class="preview-toolbar"><div class="tabs" role="tablist" aria-label="Preview mode"><button id="tab-final" role="tab" aria-selected="true" class="active">Final preview</button><button id="tab-crop" role="tab" aria-selected="false">Adjust crop</button></div><span class="square-badge">1:1 square crop</span></div>
+        <div class="preview-toolbar"><div class="tabs" role="tablist" aria-label="Preview mode"><button id="tab-final" role="tab" aria-selected="true" class="active">Final preview</button><button id="tab-crop" role="tab" aria-selected="false">Adjust crop</button></div><span class="square-badge" id="crop-shape-badge">1:1 square crop</span></div>
         <div class="canvas-stage" id="stage"><canvas id="preview" aria-label="Photo preview"></canvas><div id="preview-loading" hidden>Loading preview…</div></div>
         <div class="preview-caption"><div><strong id="current-name"></strong><span id="current-dimensions"></span></div><button id="remove-photo" class="text-button">Remove photo</button></div>
         <div class="crop-controls" id="crop-controls" hidden>
-          <p id="crop-help">Scroll to zoom. Drag the photo inside the square to choose what stays.</p>
+          <p id="crop-help">Scroll to zoom. Drag the photo inside the frame to choose what stays.</p>
           <label class="slider-label" for="crop-zoom">Zoom <output id="crop-zoom-value">100%</output></label><input type="range" id="crop-zoom" min="1" max="5" value="1" step="0.01">
           <label class="slider-label" for="crop-position">Crop position <output id="crop-position-value">Centered</output></label><div class="crop-row"><input type="range" id="crop-position" min="0" max="100" value="50" step="0.1"><button id="reset-crop" class="secondary">Reset crop</button></div>
           <p class="quiet">This adjustment applies only to the selected photo.</p>

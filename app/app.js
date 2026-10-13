@@ -1,7 +1,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const state = { tool: 'home', photos: [], selected: null, image: null, logo: null, logoURL: null, loadingLogo: false, logoVersion: 0, mode: 'final', importing: false, exporting: false, preparingExport: false, pickingFolder: false, stop: false, job: null, exportFolder: '', token: null, previewVersion: 0 };
-const controls = { size: $('logo-size'), opacity: $('logo-opacity'), margin: $('logo-margin'), resolution: $('resolution'), format: $('format') };
+const controls = { size: $('logo-size'), opacity: $('logo-opacity'), margin: $('logo-margin'), resolution: $('resolution'), format: $('format'), aspect: $('aspect-ratio') };
 let corner = 'tl', toastTimer, dragDepth = 0;
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
 
@@ -13,6 +13,7 @@ function restoreSettings() {
     const saved = JSON.parse(localStorage.getItem('filecraft-settings') || '{}');
     for (const key of ['size','opacity','margin']) if (Number.isFinite(saved[key])) controls[key].value = saved[key] * 100;
     for (const key of ['resolution','format']) if ([...controls[key].options].some(o => o.value === saved[key])) controls[key].value = saved[key];
+    if ([...controls.aspect.options].some(o => o.value === saved.aspect)) controls.aspect.value = saved.aspect;
     if (['tl','tr','bl','br'].includes(saved.corner)) corner = saved.corner;
   } catch (_) {}
   updateControls();
@@ -79,66 +80,76 @@ async function decode(file) {
 }
 function release(img) { if (img && typeof img.close === 'function') img.close(); }
 function dimensions(img) { return [img.naturalWidth || img.width, img.naturalHeight || img.height]; }
-function cropGeometry(width, height, positionX = 0.5, positionY = positionX, zoom = 1) {
-  const side = Math.min(width, height) / Math.max(1, Math.min(5, zoom));
-  return { x: (width - side) * Math.max(0, Math.min(1, positionX)), y: (height - side) * Math.max(0, Math.min(1, positionY)), side };
+function cropGeometry(width, height, positionX = 0.5, positionY = positionX, zoom = 1, ratio = '1:1') {
+  let r = ratio === 'original' ? width / height : ({'16:9':16/9,'4:3':4/3,'1:1':1}[ratio] || 1);
+  let cropWidth = Math.min(width, height * r), cropHeight = cropWidth / r;
+  cropWidth /= Math.max(1, Math.min(5, zoom)); cropHeight /= Math.max(1, Math.min(5, zoom));
+  return { x: (width - cropWidth) * Math.max(0, Math.min(1, positionX)), y: (height - cropHeight) * Math.max(0, Math.min(1, positionY)), width: cropWidth, height: cropHeight, side: cropWidth };
 }
-function photoCrop(photo) { return cropGeometry(photo.width, photo.height, photo.positionX, photo.positionY, photo.zoom); }
-function cropViewport() { return { size: 1200, x: 90, y: 90, side: 1020 }; }
-function logoGeometry(width, height, side, config) {
-  const margin = side * config.margin;
-  const scale = Math.min(side * config.size / width, (side - margin * 2) * 0.6 / height);
+function photoCrop(photo) { return cropGeometry(photo.width, photo.height, photo.positionX, photo.positionY, photo.zoom, controls.aspect.value); }
+function cropViewport(photo = currentPhoto()) {
+  const size = 1200, r = photo ? photoCrop({...photo,zoom:1}).width / photoCrop({...photo,zoom:1}).height : 1;
+  const width = Math.min(1020,1020*r), height = Math.min(1020,1020/r);
+  return { size, x:(size-width)/2, y:(size-height)/2, width, height, side:width };
+}
+function logoGeometry(width, height, canvasWidth, canvasHeight, config) {
+  const short = Math.min(canvasWidth,canvasHeight), margin = short * config.margin;
+  const scale = Math.min(short * config.size / width, (short - margin * 2) * 0.6 / height);
   const w = width * scale, h = height * scale;
-  return { x: config.corner.endsWith('r') ? side - margin - w : margin, y: config.corner.startsWith('b') ? side - margin - h : margin, width: w, height: h };
+  return { x: config.corner.endsWith('r') ? canvasWidth - margin - w : margin, y: config.corner.startsWith('b') ? canvasHeight - margin - h : margin, width: w, height: h };
 }
+function outputSize(photo, config) { const crop = photoCrop(photo), max = config.resolution === 'original' ? Infinity : +config.resolution, scale = Math.min(1,max/Math.max(crop.width,crop.height)); return { width:Math.max(1,Math.floor(crop.width*scale)), height:Math.max(1,Math.floor(crop.height*scale)) }; }
+function outputSide(photo, config) { const size=outputSize(photo,config); return Math.max(size.width,size.height); }
 function renderFinal(canvas, image, photo, config, logo, side) {
-  canvas.width = side; canvas.height = side;
-  const ctx = canvas.getContext('2d'), crop = photoCrop(photo);
+  const crop = photoCrop(photo), target = outputSize(photo,config), scale = Math.min(side/Math.max(target.width,target.height),1);
+  canvas.width = Math.max(1,Math.floor(target.width*scale)); canvas.height = Math.max(1,Math.floor(target.height*scale));
+  const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   // JPG exports flatten any transparency against white; PNG retains it.
-  if (config.format === 'jpg') { ctx.fillStyle = '#fff'; ctx.fillRect(0,0,side,side); }
-  ctx.drawImage(image,crop.x,crop.y,crop.side,crop.side,0,0,side,side);
+  if (config.format === 'jpg') { ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+  ctx.drawImage(image,crop.x,crop.y,crop.width,crop.height,0,0,canvas.width,canvas.height);
   if (logo) {
-    const [lw,lh] = dimensions(logo), box = logoGeometry(lw,lh,side,config);
+    const [lw,lh] = dimensions(logo), box = logoGeometry(lw,lh,canvas.width,canvas.height,config);
     ctx.globalAlpha = config.opacity;
     ctx.drawImage(logo,box.x,box.y,box.width,box.height);
     ctx.globalAlpha = 1;
   }
 }
-function outputSide(photo, config) { return Math.max(1, Math.floor(Math.min(photoCrop(photo).side, config.resolution === 'original' ? Infinity : +config.resolution))); }
 function currentPhoto() { return state.photos.find(p => p.id === state.selected); }
 function drawPreview() {
   const photo = currentPhoto(); if (!photo || !state.image) return;
   const canvas = $('preview'), config = settings();
   if (state.mode === 'final') {
-    renderFinal(canvas,state.image,photo,config,state.logo,Math.min(1200,outputSide(photo,config)));
+    renderFinal(canvas,state.image,photo,config,state.logo,1200);
   } else {
-    const frame = cropViewport(), crop = photoCrop(photo), scale = frame.side / crop.side;
+    const frame = cropViewport(photo), crop = photoCrop(photo), scaleX = frame.width / crop.width, scaleY = frame.height / crop.height;
     canvas.width = canvas.height = frame.size;
-    const ctx = canvas.getContext('2d'), { x, y, side } = frame;
+    const ctx = canvas.getContext('2d'), { x, y, width, height } = frame;
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     ctx.fillStyle = '#e9ede4'; ctx.fillRect(0,0,canvas.width,canvas.height);
     // The frame stays fixed; the full photo enlarges and moves underneath it.
-    // A dimmed border reveals nearby content outside the exported square.
-    ctx.drawImage(state.image,x-crop.x*scale,y-crop.y*scale,photo.width*scale,photo.height*scale);
+    // A dimmed border reveals nearby content outside the selected crop.
+    ctx.drawImage(state.image,x-crop.x*scaleX,y-crop.y*scaleY,photo.width*scaleX,photo.height*scaleY);
     ctx.fillStyle = 'rgba(18,31,24,.52)';
-    ctx.fillRect(0,0,canvas.width,y); ctx.fillRect(0,y+side,canvas.width,canvas.height-y-side);
-    ctx.fillRect(0,y,x,side); ctx.fillRect(x+side,y,canvas.width-x-side,side);
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeRect(x+1.5,y+1.5,side-3,side-3);
+    ctx.fillRect(0,0,canvas.width,y); ctx.fillRect(0,y+height,canvas.width,canvas.height-y-height);
+    ctx.fillRect(0,y,x,height); ctx.fillRect(x+width,y,canvas.width-x-width,height);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeRect(x+1.5,y+1.5,width-3,height-3);
     ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 1;
-    ctx.beginPath(); for (let i=1;i<3;i++) { ctx.moveTo(x+side*i/3,y); ctx.lineTo(x+side*i/3,y+side); ctx.moveTo(x,y+side*i/3); ctx.lineTo(x+side,y+side*i/3); } ctx.stroke();
+    ctx.beginPath(); for (let i=1;i<3;i++) { ctx.moveTo(x+width*i/3,y); ctx.lineTo(x+width*i/3,y+height); ctx.moveTo(x,y+height*i/3); ctx.lineTo(x+width,y+height*i/3); } ctx.stroke();
   }
   $('current-name').textContent = photo.path;
-  const side = outputSide(photo,config);
-  $('current-dimensions').textContent = `${photo.width} × ${photo.height} original → ${side} × ${side} export`;
+  const target = outputSize(photo,config);
+  $('current-dimensions').textContent = `${photo.width} × ${photo.height} original → ${target.width} × ${target.height} export`;
   const position = photo.width >= photo.height ? photo.positionX : photo.positionY;
   $('crop-position').value = position * 100;
-  $('crop-position').disabled = (photo.width === photo.height && photo.zoom === 1) || state.exporting || state.importing;
+  $('crop-position').disabled = (photoCrop(photo).width >= photo.width && photoCrop(photo).height >= photo.height) || state.exporting || state.importing;
   $('crop-position-value').textContent = Math.abs(position-.5) < .005 ? 'Centered' : `${Math.round(position*100)}%`;
   $('crop-zoom').value = photo.zoom;
   $('crop-zoom').disabled = state.exporting || state.importing;
   $('crop-zoom-value').textContent = `${Math.round(photo.zoom*100)}%`;
-  $('crop-help').textContent = 'Scroll to zoom. Drag the photo to move it inside the square. The dimmed edges show what is outside your crop.';
+  const labels = {'1:1':'1:1 square','16:9':'16:9 wide','4:3':'4:3','original':'Original photo shape'};
+  $('crop-shape-badge').textContent = labels[controls.aspect.value] + ' crop';
+  $('crop-help').textContent = 'Scroll to zoom. Drag the photo to move it inside the frame. The dimmed edges show what is outside your crop.';
 }
 async function selectPhoto(id) {
   pointer = null;
@@ -157,7 +168,7 @@ async function selectPhoto(id) {
 function setPosition(value) {
   if (state.exporting || state.importing || !state.image) return;
   const photo = currentPhoto(); if (!photo) return;
-  photo[photo.width >= photo.height ? 'positionX' : 'positionY'] = Math.max(0,Math.min(1,value));
+  const crop=photoCrop(photo); photo[photo.width>crop.width ? 'positionX' : 'positionY'] = Math.max(0,Math.min(1,value));
   cropChanged(photo);
 }
 function cropChanged(photo) {
@@ -165,20 +176,20 @@ function cropChanged(photo) {
   if (tile) tile.classList.toggle('adjusted',photo.zoom > 1 || Math.abs(photo.positionX-.5)>.005 || Math.abs(photo.positionY-.5)>.005);
   drawPreview();
 }
-function placeCrop(photo, x, y, side) {
-  photo.positionX = photo.width > side ? Math.max(0,Math.min(1,x/(photo.width-side))) : .5;
-  photo.positionY = photo.height > side ? Math.max(0,Math.min(1,y/(photo.height-side))) : .5;
+function placeCrop(photo, x, y, width, height = width) {
+  photo.positionX = photo.width > width ? Math.max(0,Math.min(1,x/(photo.width-width))) : .5;
+  photo.positionY = photo.height > height ? Math.max(0,Math.min(1,y/(photo.height-height))) : .5;
 }
 function setZoom(value, point) {
   const photo = currentPhoto(); if (!photo || !state.image || state.exporting || state.importing) return;
   const crop = photoCrop(photo), zoom = Math.max(1,Math.min(5,value));
   if (zoom === photo.zoom) return;
   // Keep the point under the cursor in the same part of the crop. Sliders zoom around its center.
-  const inside = point && point.x >= crop.x && point.x <= crop.x+crop.side && point.y >= crop.y && point.y <= crop.y+crop.side;
-  const fx = inside ? (point.x-crop.x)/crop.side : .5, fy = inside ? (point.y-crop.y)/crop.side : .5;
-  const side = Math.min(photo.width,photo.height)/zoom;
+  const inside = point && point.x >= crop.x && point.x <= crop.x+crop.width && point.y >= crop.y && point.y <= crop.y+crop.height;
+  const fx = inside ? (point.x-crop.x)/crop.width : .5, fy = inside ? (point.y-crop.y)/crop.height : .5;
+  const next=cropGeometry(photo.width,photo.height,photo.positionX,photo.positionY,zoom,controls.aspect.value);
   photo.zoom = zoom;
-  placeCrop(photo,crop.x+(crop.side-side)*fx,crop.y+(crop.side-side)*fy,side);
+  placeCrop(photo,crop.x+(crop.width-next.width)*fx,crop.y+(crop.height-next.height)*fy,next.width,next.height);
   cropChanged(photo);
 }
 function setMode(mode) {
@@ -355,8 +366,8 @@ $('reset-crop').addEventListener('click',()=>{
 });
 let pointer = null;
 function previewPoint(e, photo) {
-  const rect = $('preview').getBoundingClientRect(), frame = cropViewport(), crop = photoCrop(photo);
-  return { x: crop.x+((e.clientX-rect.left)/rect.width*frame.size-frame.x)*crop.side/frame.side, y: crop.y+((e.clientY-rect.top)/rect.height*frame.size-frame.y)*crop.side/frame.side };
+  const rect = $('preview').getBoundingClientRect(), frame = cropViewport(photo), crop = photoCrop(photo);
+  return { x: crop.x+((e.clientX-rect.left)/rect.width*frame.size-frame.x)*crop.width/frame.width, y: crop.y+((e.clientY-rect.top)/rect.height*frame.size-frame.y)*crop.height/frame.height };
 }
 $('preview').addEventListener('wheel',e=>{
   const photo = currentPhoto(); if (state.mode !== 'crop' || !photo || !state.image || state.exporting || state.importing || pointer || !e.deltaY) return;
@@ -366,16 +377,16 @@ $('preview').addEventListener('wheel',e=>{
 },{ passive: false });
 $('preview').addEventListener('pointerdown',e=>{
   const photo = currentPhoto(); if (state.mode!=='crop' || !photo || !state.image || state.exporting || state.importing || pointer || e.button !== 0) return;
-  const crop = photoCrop(photo), rect = $('preview').getBoundingClientRect(), frame = cropViewport();
-  if (crop.side === photo.width && crop.side === photo.height) return;
-  pointer = { photoId: photo.id, startX: crop.x, startY: crop.y, clientX: e.clientX, clientY: e.clientY, scaleX: crop.side*frame.size/(rect.width*frame.side), scaleY: crop.side*frame.size/(rect.height*frame.side), id:e.pointerId };
+  const crop = photoCrop(photo), rect = $('preview').getBoundingClientRect(), frame = cropViewport(photo);
+  if (crop.width >= photo.width && crop.height >= photo.height) return;
+  pointer = { photoId: photo.id, startX: crop.x, startY: crop.y, clientX: e.clientX, clientY: e.clientY, scaleX: crop.width*frame.size/(rect.width*frame.width), scaleY: crop.height*frame.size/(rect.height*frame.height), id:e.pointerId };
   $('preview').setPointerCapture(e.pointerId);
 });
 function movePointer(e) {
   if (!pointer || e.pointerId!==pointer.id || state.mode !== 'crop' || state.exporting || state.importing || !state.image) return;
   const photo = currentPhoto(); if (!photo || photo.id !== pointer.photoId) return;
   // Pan the image in the same direction as the hand, using the original drag origin.
-  placeCrop(photo,pointer.startX+(pointer.clientX-e.clientX)*pointer.scaleX,pointer.startY+(pointer.clientY-e.clientY)*pointer.scaleY,photoCrop(photo).side); cropChanged(photo);
+  const crop=photoCrop(photo); placeCrop(photo,pointer.startX+(pointer.clientX-e.clientX)*pointer.scaleX,pointer.startY+(pointer.clientY-e.clientY)*pointer.scaleY,crop.width,crop.height); cropChanged(photo);
 }
 function endPointer(e) { if (pointer?.id === e.pointerId) pointer = null; }
 $('preview').addEventListener('pointermove',movePointer); $('preview').addEventListener('pointerup',endPointer); $('preview').addEventListener('pointercancel',endPointer); $('preview').addEventListener('lostpointercapture',endPointer);

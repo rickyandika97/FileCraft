@@ -3,7 +3,7 @@
 Three tools for your photos and PDFs, running locally on your computer:
 
 - **Make files smaller** — shrink photos and PDFs to fit an upload limit.
-- **Crop & watermark** — make square product photos and add your logo.
+- **Crop & watermark** — make square, wide, 4:3, or original-shape photos and add your logo.
 - **Combine & split PDFs** — join PDFs and photos, rearrange pages, or extract pages.
 
 Files stay on your computer. Every Save or Export asks where to save and creates
@@ -15,24 +15,24 @@ Download the DMG from this repository's **Releases** section. Open it, drag
 **FileCraft** into **Applications**, eject the disk, and launch the app.
 Python and PDF tools are included; it opens in its own window and works offline.
 
-The current build is **1.0.3**, for **Apple Silicon Macs (M1 or newer), macOS 11+**.
+The current build is **1.1.0**, for **Apple Silicon Macs (M1 or newer), macOS 11+**.
 It has been tested on macOS 15.6.1. Intel Macs need a separate build.
 
 This build is ad-hoc signed and is not Apple-notarized. macOS may require approval
 in **System Settings → Privacy & Security** on another Mac.
 
 If building locally, the installer is written to
-`release/FileCraft-1.0.3-arm64.dmg`. Generated downloads are excluded from Git;
+`release/FileCraft-1.1.0-arm64.dmg`. Generated downloads are excluded from Git;
 they belong in GitHub Releases.
 
 ## Windows app (test build)
 
 The **Windows x64 portable build** is ready for testing on a 64-bit Intel/AMD PC
-running Windows 10 or 11. Extract `FileCraft-1.0.3-windows-x64-portable.zip`
+running Windows 10 or 11. Extract `FileCraft-1.1.0-windows-x64-portable.zip`
 and open **FileCraft.exe**. Keep the extracted folder together.
 Python and the PDF tools are included; the app opens in its own window.
 
-This FileCraft build was assembled on a Mac and needs a Windows launch check.
+The FileCraft 1.1.0 build was assembled on a Mac and needs a Windows launch check.
 The previous 1.0.2 build passed Windows 10 x64 diagnostics (build 19045), and the
 user confirmed all three tools, saving files, and reopening worked on that version.
 Detailed checklist edge cases and Windows 11 remain unconfirmed; see the

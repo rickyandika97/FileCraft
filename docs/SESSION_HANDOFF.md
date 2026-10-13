@@ -2,13 +2,13 @@
 
 ## Current project
 
-The app and project are now **FileCraft 1.0.3**. The name covers all three tools:
+The current app build is **FileCraft 1.1.0**. The name covers all three tools:
 photo/PDF compression, photo cropping/watermarking, and PDF assembly/splitting.
 The interface, FC logo, favicon, native icons, desktop titles, source launchers,
 package identifiers, settings paths, diagnostics, notices and download names have
 been updated. The app remains local and originals are preserved.
 
-Project folder after the rename: `/Users/ricky/Desktop/FileCraft`.
+Project folder: `/Users/ricky/FileCraft`.
 Build scripts derive the root from their own location. Avoid activation scripts
 that embed a previous folder path; use `.build-venv/bin/python` directly.
 
@@ -17,13 +17,12 @@ that embed a previous folder path; use `.build-venv/bin/python` directly.
 | Artifact | Location |
 | --- | --- |
 | Mac app | `dist/FileCraft.app` |
-| Mac installer | `release/FileCraft-1.0.3-arm64.dmg` |
-| Source download | `release/FileCraft-1.0.3-source.zip` |
+| Mac installer | `release/FileCraft-1.1.0-arm64.dmg` |
+| Source download | `release/FileCraft-1.1.0-source.zip` |
 | Mac/source checksums | `release/SHA256SUMS.txt` |
-| Windows portable download | `release/FileCraft-1.0.3-windows-x64-portable.zip` |
-| Windows source download | `release/FileCraft-1.0.3-windows-x64-source.zip` |
-| Windows checksums | `release/FileCraft-1.0.3-windows-x64-SHA256SUMS.txt` |
-| Windows build evidence | `release/FileCraft-1.0.3-windows-x64-BUILD-NOTES.txt` |
+| Windows portable download | `release/FileCraft-1.1.0-windows-x64-portable.zip` |
+| Windows source download | `release/FileCraft-1.1.0-windows-x64-source.zip` |
+| Windows checksums | `release/FileCraft-1.1.0-windows-x64-SHA256SUMS.txt` |
 | Unpacked Windows app | `dist/windows-x64/FileCraft/` |
 | GitHub source upload folder | `release/github-source/FileCraft/` |
 
@@ -31,7 +30,20 @@ Previous artifacts and their original build records are preserved locally under
 `.local/rebrand-20261013/`; they are excluded from Git and source downloads.
 Earlier cleanup history also stays under `.local/`.
 
-## Validation of FileCraft 1.0.3
+## FileCraft 1.1.0 build verification
+
+Version 1.1.0 adds selectable 1:1, 16:9, 4:3 and original photo crop shapes,
+and updated tool icons. Built on 13 October 2026 from the current source.
+
+- Mac app version 1.1.0, build 5; deep/strict ad-hoc signature verified.
+- Mac DMG checksum verified.
+- Windows x64 portable ZIP built; archive CRC and package checks passed.
+- Packaged Mac and Windows interfaces contain the updated crop and PDF icons and
+  crop shape choices. Release checksums were regenerated.
+- The 1.1.0 automated test suite and real Windows device workflow have not been
+  rerun. The Windows package still needs launch, diagnostic, save and reopen checks.
+
+## Prior validation of FileCraft 1.0.3
 
 Completed on the Mac:
 
@@ -48,11 +60,8 @@ Completed on the Mac:
 - Locked Windows downloads verified; ZIP CRCs, matching source contents and SHA256
   checksums checked. No previous branding remains in active source or downloads.
 
-The first sandboxed DMG creation could not access the macOS disk-image service.
-A scoped retry with disk-image permission created the DMG and verification passed.
-The Windows package is cross-built on this Apple Silicon Mac and needs a quick
-Windows launch/diagnostic/save/reopen check after the rename. The existing user
-results below apply to version 1.0.2, not execution of the new Windows binaries.
+The Windows device results below apply to version 1.0.2, not execution of the
+newer Windows binaries.
 
 ## Previous Windows results — version 1.0.2
 
@@ -116,4 +125,4 @@ node --test tests/crop.test.js tests/resize.test.js
 See [BUILDING_MAC.md](BUILDING_MAC.md), [BUILDING_WINDOWS.md](BUILDING_WINDOWS.md)
 and [RELEASING.md](RELEASING.md). Runtime versions remain CPython 3.13.16 for Windows,
 pywebview 6.2.1, PyMuPDF 1.28.2 and pypdf 6.20.0. Zig 0.14.1 is cached under
-`build/windows/toolchain/ziglang/zig`. All source is currently untracked in Git.
+`build/windows/toolchain/ziglang/zig`. Generated packages are excluded from Git.

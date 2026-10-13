@@ -20,7 +20,7 @@ app's ad-hoc signature, and creates and checks the DMG.
 The outputs are:
 
 - `dist/FileCraft.app` — the desktop application.
-- `release/FileCraft-1.0.3-arm64.dmg` — the installer to share.
+- `release/FileCraft-1.1.0-arm64.dmg` — the installer to share.
 - `build/mac/` — temporary packaging files and caches.
 
 The Apple Silicon build requires macOS 11 or newer and has been tested on macOS
@@ -46,7 +46,7 @@ source-only download and an unpacked folder for a GitHub browser upload:
 python3 packaging/source_archive.py
 ```
 
-This writes `release/FileCraft-1.0.3-source.zip` and
+This writes `release/FileCraft-1.1.0-source.zip` and
 `release/github-source/FileCraft/`. It uses an explicit list of source files
 and includes the PDF test fixtures. It excludes installed dependencies, DMGs,
 compiled apps, caches, personal exports, save history and local validation files.

@@ -14,6 +14,7 @@
 .tool-choice .choice-action{margin-top:auto!important;color:var(--green)!important;font-weight:600}
 .tool-symbol{display:flex;align-items:center;justify-content:center;width:62px;height:62px;background:#e6eedb;border-radius:13px;font-size:36px;font-weight:400;color:var(--green)}
 .stamp-symbol{background:#f1eddf;color:#796340}
+.tool-symbol svg{width:37px;height:37px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.pdf-symbol{background:#eee9e2;color:#74553b}
 .home-note{font-size:15px;color:#5e6c63;line-height:1.6;margin-top:30px}
 .tool-back{font-size:14px;min-height:44px;margin-bottom:25px;white-space:normal}
 .resize-layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:28px;max-width:1320px;margin:0 auto;padding:35px 32px}

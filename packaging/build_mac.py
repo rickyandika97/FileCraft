@@ -9,7 +9,7 @@ from brand_icon import render_icon
 
 ROOT = Path(__file__).resolve().parents[1]
 NAME = 'FileCraft'
-VERSION = '1.0.3'
+VERSION = '1.1.0'
 
 
 def run(*command, **kwargs):
@@ -130,7 +130,7 @@ collection = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name={NAM
 app = BUNDLE(collection, name={NAME + '.app'!r}, icon={str(icon)!r},
     bundle_identifier='com.filecraft.desktop',
     info_plist={{'CFBundleName': {NAME!r}, 'CFBundleDisplayName': {NAME!r},
-                'CFBundleShortVersionString': {VERSION!r}, 'CFBundleVersion': '4',
+                'CFBundleShortVersionString': {VERSION!r}, 'CFBundleVersion': '5',
                 'LSMinimumSystemVersion': '11.0', 'NSHighResolutionCapable': True,
                 'NSHumanReadableCopyright': 'FileCraft contributors. GNU AGPLv3; includes open-source components.'}})
 ''')
