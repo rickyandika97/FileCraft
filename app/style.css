@@ -86,6 +86,10 @@
 
 .pdf-pages{margin-top:20px}
 
+.photo-rotation{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:15px 0;font-size:12px}.photo-rotation .secondary{min-height:40px;padding:8px 12px}.photo-rotation output{color:var(--muted);font-variant-numeric:tabular-nums}
+#stage.watermark-draggable canvas{cursor:grab;touch-action:none}#stage.watermark-draggable canvas:active{cursor:grabbing}
+.photo-tile.custom-watermark{border-style:dashed}
+
 .pdf-page .pdf-page-preview{display:block;width:100%;padding:0;border:0;background:transparent;color:var(--green);cursor:zoom-in}.pdf-page-preview span{display:block;font-size:13px;font-weight:600;margin-top:8px}
 .pdf-preview-dialog{width:min(1100px,95vw);max-width:95vw;max-height:95vh;margin:auto;padding:22px;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);box-shadow:0 15px 70px #0005}.pdf-preview-dialog::backdrop{background:#172b24b3}.pdf-preview-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:16px}.pdf-preview-heading h2{font-size:23px;margin:0 0 7px}.pdf-preview-heading p{font-size:14px;color:var(--muted);margin:0;overflow-wrap:anywhere}.pdf-preview-heading>div{min-width:0}.pdf-preview-heading .secondary{font-size:15px}
 .pdf-preview-stage{height:min(65vh,780px);overflow:auto;display:flex;align-items:center;justify-content:center;background:#e4e9df;border:1px solid var(--line);border-radius:8px;padding:12px}.pdf-preview-stage img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;box-shadow:0 3px 16px #21302a15}.pdf-preview-stage.zoomed{display:block}.pdf-preview-stage.zoomed img{max-width:none;max-height:none;margin:0 auto}.pdf-preview-message{font-size:14px;color:var(--muted);min-height:20px;margin:10px 0;line-height:1.5}.pdf-preview-controls{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.pdf-preview-controls .secondary{font-size:15px;min-height:44px}.pdf-preview-controls [aria-pressed=true]{background:var(--accent);border-color:var(--green)}

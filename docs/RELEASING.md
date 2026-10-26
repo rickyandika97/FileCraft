@@ -23,10 +23,10 @@ launchers, Python files, and the `app/`, `docs/`, `packaging/` and `tests/` fold
 Once the source is in the repository:
 
 1. Open **Releases → Draft a new release**.
-2. Create the tag `v1.1.0` against the source commit for this build.
-3. Use **FileCraft 1.1.0** as the release title.
-4. Attach `FileCraft-1.1.0-arm64.dmg`,
-   `FileCraft-1.1.0-source.zip`, `SHA256SUMS.txt`, and
+2. Create the tag `v1.2.0` against the source commit for this build.
+3. Use **FileCraft 1.2.0** as the release title.
+4. Attach `FileCraft-1.2.0-arm64.dmg`,
+   `FileCraft-1.2.0-source.zip`, `SHA256SUMS.txt`, and
    `THIRD-PARTY-NOTICES.txt` from the local `release/` folder.
 5. Describe Apple Silicon/macOS compatibility and the signing status, then publish
    the release when ready.
@@ -39,10 +39,11 @@ dependency notices; third-party components retain their respective licenses.
 ## Suggested release description
 
 ```text
-FileCraft 1.1.0
+FileCraft 1.2.0
 
 Local tools for shrinking photos and PDFs, cropping photos to 1:1, 16:9, 4:3 or
-their original shape and watermarking photos,
+their original shape, rotating photos, and adding watermarks with shared or
+per-photo placement (including dragging the logo in Final preview),
 and combining or splitting PDF pages. Each Save or Export asks for its folder.
 Originals are preserved.
 
@@ -58,20 +59,21 @@ Source and build instructions are included. GNU AGPLv3 license.
 Current status and Windows test results are recorded in
 [SESSION_HANDOFF.md](SESSION_HANDOFF.md). On 13 October 2026, the user supplied
 passing Windows 10 x64 diagnostics and confirmed all three tools, saving files,
-and reopening the previous 1.0.2 app. The FileCraft 1.1.0 package needs a
+and reopening the previous 1.0.2 app. The FileCraft 1.2.0 package needs a
 Windows launch check. Windows publication has not been performed.
 
 The Mac-built Windows x64 portable app is a separate test download. Follow
 [BUILDING_WINDOWS.md](BUILDING_WINDOWS.md) to rebuild it. Its release assets are
-`FileCraft-1.1.0-windows-x64-portable.zip`, the matching
+`FileCraft-1.2.0-windows-x64-portable.zip`, the matching
 `windows-x64-source.zip`, and `windows-x64-SHA256SUMS.txt`. Record the previous
-1.0.2 Windows 10 results separately from the 1.1.0 package's launch check.
+1.0.2 Windows 10 results separately from the 1.2.0 package's launch check.
 Detailed checklist cases and Windows 11 remain unconfirmed; see
 [the Windows checklist](TESTING_WINDOWS.md) and the test record.
 It targets Windows 10/11 on 64-bit Intel/AMD PCs and includes the official
 Microsoft prerequisite installers for machines that need them.
 
 When making a new version, update `VERSION` and `CFBundleVersion` in
-`packaging/build_mac.py`, update the release references in the docs, build the app,
+`packaging/build_mac.py`, update the Windows manifest and numeric resource versions in
+`packaging/build_windows.py`, update the release references in the docs, build the app,
 run the checks, and regenerate the source ZIP and checksums. Do not replace a
 published version's assets with a different build under the same tag.

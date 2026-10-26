@@ -1,4 +1,4 @@
-FileCraft 1.1.0 — third-party software notices
+FileCraft 1.2.0 — third-party software notices
 Python and the following open-source components are included in this app.
 Bundled component license files are below. macOS WebKit is provided by Apple.
 FileCraft is licensed under GNU AGPL version 3. See LICENSE.

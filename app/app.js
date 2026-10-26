@@ -6,7 +6,7 @@ let corner = 'tl', toastTimer, dragDepth = 0;
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
 
 function toast(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 6500); }
-function settings() { return { corner, size: +controls.size.value / 100, opacity: +controls.opacity.value / 100, margin: +controls.margin.value / 100, resolution: controls.resolution.value, format: controls.format.value }; }
+function settings() { return { corner, size: +controls.size.value / 100, opacity: +controls.opacity.value / 100, margin: +controls.margin.value / 100, resolution: controls.resolution.value, format: controls.format.value, aspect: controls.aspect.value }; }
 function saveSettings() { try { localStorage.setItem('filecraft-settings', JSON.stringify(settings())); } catch (_) {} }
 function restoreSettings() {
   try {
@@ -20,15 +20,21 @@ function restoreSettings() {
 }
 function updateControls() {
   for (const key of ['size','opacity','margin']) $('logo-' + key + '-value').textContent = controls[key].value + '%';
-  document.querySelectorAll('[data-corner]').forEach(button => { const selected = button.dataset.corner === corner; button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', String(selected)); });
+  const placement = currentPhoto()?.watermarkPlacement, selectedCorner = placement ? placement.corner : corner;
+  document.querySelectorAll('[data-corner]').forEach(button => { const selected = button.dataset.corner === selectedCorner; button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', String(selected)); });
+  $('placement-mode').value = placement ? 'custom' : 'shared';
+  $('placement-help').textContent = placement ? 'Placement is customized for this photo. Choose Use shared placement to reset it.' : 'Corner buttons set the shared placement. Drag the logo in Final preview to customize one photo.';
 }
 function refreshAvailability() {
   const busy = state.importing || state.exporting || state.preparingExport || state.pickingFolder;
   $('watermark-back').disabled = busy;
   const photo = currentPhoto();
   $('crop-zoom').disabled = busy || !state.image;
-  $('crop-position').disabled = busy || !state.image || (photo?.width === photo?.height && photo?.zoom === 1);
+  $('crop-position').disabled = busy || !state.image || (photo && photoCrop(photo).width >= orientedDimensions(photo).width && photoCrop(photo).height >= orientedDimensions(photo).height);
   $('reset-crop').disabled = busy || !state.image;
+  $('rotate-left').disabled = $('rotate-right').disabled = busy || !state.image;
+  $('placement-mode').disabled = busy || !photo;
+  $('stage').classList.toggle('watermark-draggable',!busy && state.mode === 'final' && !!state.image && !!state.logo);
   $('settings').disabled = busy;
   $('add-photos').disabled = busy; $('add-folder').disabled = busy;
   $('photos-input').disabled = busy; $('folder-input').disabled = busy;
@@ -80,13 +86,14 @@ async function decode(file) {
 }
 function release(img) { if (img && typeof img.close === 'function') img.close(); }
 function dimensions(img) { return [img.naturalWidth || img.width, img.naturalHeight || img.height]; }
+function orientedDimensions(photo) { return (photo.rotation || 0) % 180 ? { width: photo.height, height: photo.width } : { width: photo.width, height: photo.height }; }
 function cropGeometry(width, height, positionX = 0.5, positionY = positionX, zoom = 1, ratio = '1:1') {
   let r = ratio === 'original' ? width / height : ({'16:9':16/9,'4:3':4/3,'1:1':1}[ratio] || 1);
   let cropWidth = Math.min(width, height * r), cropHeight = cropWidth / r;
   cropWidth /= Math.max(1, Math.min(5, zoom)); cropHeight /= Math.max(1, Math.min(5, zoom));
   return { x: (width - cropWidth) * Math.max(0, Math.min(1, positionX)), y: (height - cropHeight) * Math.max(0, Math.min(1, positionY)), width: cropWidth, height: cropHeight, side: cropWidth };
 }
-function photoCrop(photo) { return cropGeometry(photo.width, photo.height, photo.positionX, photo.positionY, photo.zoom, controls.aspect.value); }
+function photoCrop(photo, ratio = controls.aspect.value) { const {width,height} = orientedDimensions(photo); return cropGeometry(width, height, photo.positionX, photo.positionY, photo.zoom, ratio); }
 function cropViewport(photo = currentPhoto()) {
   const size = 1200, r = photo ? photoCrop({...photo,zoom:1}).width / photoCrop({...photo,zoom:1}).height : 1;
   const width = Math.min(1020,1020*r), height = Math.min(1020,1020/r);
@@ -96,20 +103,36 @@ function logoGeometry(width, height, canvasWidth, canvasHeight, config) {
   const short = Math.min(canvasWidth,canvasHeight), margin = short * config.margin;
   const scale = Math.min(short * config.size / width, (short - margin * 2) * 0.6 / height);
   const w = width * scale, h = height * scale;
+  if (config.position) return { x: Math.max(0,Math.min(1,config.position.x)) * (canvasWidth-w), y: Math.max(0,Math.min(1,config.position.y)) * (canvasHeight-h), width: w, height: h };
   return { x: config.corner.endsWith('r') ? canvasWidth - margin - w : margin, y: config.corner.startsWith('b') ? canvasHeight - margin - h : margin, width: w, height: h };
 }
-function outputSize(photo, config) { const crop = photoCrop(photo), max = config.resolution === 'original' ? Infinity : +config.resolution, scale = Math.min(1,max/Math.max(crop.width,crop.height)); return { width:Math.max(1,Math.floor(crop.width*scale)), height:Math.max(1,Math.floor(crop.height*scale)) }; }
+function watermarkSettings(photo, config) { return { ...config, ...photo.watermarkPlacement }; }
+function outputSize(photo, config) { const crop = photoCrop(photo,config.aspect), max = config.resolution === 'original' ? Infinity : +config.resolution, scale = Math.min(1,max/Math.max(crop.width,crop.height)); return { width:Math.max(1,Math.floor(crop.width*scale)), height:Math.max(1,Math.floor(crop.height*scale)) }; }
 function outputSide(photo, config) { const size=outputSize(photo,config); return Math.max(size.width,size.height); }
+// Draw in the rotated photo's coordinate system without allocating a second full-size bitmap.
+function drawOrientedPhoto(ctx, image, photo, x, y, width, height) {
+  const rotation = photo.rotation || 0;
+  if (!rotation) { ctx.drawImage(image,x,y,width,height); return; }
+  const size = orientedDimensions(photo);
+  ctx.save(); ctx.translate(x,y); ctx.scale(width/size.width,height/size.height);
+  if (rotation === 90) ctx.translate(photo.height,0);
+  else if (rotation === 180) ctx.translate(photo.width,photo.height);
+  else if (rotation === 270) ctx.translate(0,photo.width);
+  ctx.rotate(rotation*Math.PI/180); ctx.drawImage(image,0,0,photo.width,photo.height); ctx.restore();
+}
 function renderFinal(canvas, image, photo, config, logo, side) {
-  const crop = photoCrop(photo), target = outputSize(photo,config), scale = Math.min(side/Math.max(target.width,target.height),1);
+  const crop = photoCrop(photo,config.aspect), target = outputSize(photo,config), scale = Math.min(side/Math.max(target.width,target.height),1);
   canvas.width = Math.max(1,Math.floor(target.width*scale)); canvas.height = Math.max(1,Math.floor(target.height*scale));
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   // JPG exports flatten any transparency against white; PNG retains it.
   if (config.format === 'jpg') { ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); }
-  ctx.drawImage(image,crop.x,crop.y,crop.width,crop.height,0,0,canvas.width,canvas.height);
+  if (photo.rotation) {
+    const size = orientedDimensions(photo), sx = canvas.width/crop.width, sy = canvas.height/crop.height;
+    drawOrientedPhoto(ctx,image,photo,-crop.x*sx,-crop.y*sy,size.width*sx,size.height*sy);
+  } else ctx.drawImage(image,crop.x,crop.y,crop.width,crop.height,0,0,canvas.width,canvas.height);
   if (logo) {
-    const [lw,lh] = dimensions(logo), box = logoGeometry(lw,lh,canvas.width,canvas.height,config);
+    const [lw,lh] = dimensions(logo), box = logoGeometry(lw,lh,canvas.width,canvas.height,watermarkSettings(photo,config));
     ctx.globalAlpha = config.opacity;
     ctx.drawImage(logo,box.x,box.y,box.width,box.height);
     ctx.globalAlpha = 1;
@@ -129,7 +152,8 @@ function drawPreview() {
     ctx.fillStyle = '#e9ede4'; ctx.fillRect(0,0,canvas.width,canvas.height);
     // The frame stays fixed; the full photo enlarges and moves underneath it.
     // A dimmed border reveals nearby content outside the selected crop.
-    ctx.drawImage(state.image,x-crop.x*scaleX,y-crop.y*scaleY,photo.width*scaleX,photo.height*scaleY);
+    const size = orientedDimensions(photo);
+    drawOrientedPhoto(ctx,state.image,photo,x-crop.x*scaleX,y-crop.y*scaleY,size.width*scaleX,size.height*scaleY);
     ctx.fillStyle = 'rgba(18,31,24,.52)';
     ctx.fillRect(0,0,canvas.width,y); ctx.fillRect(0,y+height,canvas.width,canvas.height-y-height);
     ctx.fillRect(0,y,x,height); ctx.fillRect(x+width,y,canvas.width-x-width,height);
@@ -140,12 +164,17 @@ function drawPreview() {
   $('current-name').textContent = photo.path;
   const target = outputSize(photo,config);
   $('current-dimensions').textContent = `${photo.width} × ${photo.height} original → ${target.width} × ${target.height} export`;
-  const position = photo.width >= photo.height ? photo.positionX : photo.positionY;
+  const size = orientedDimensions(photo), crop = photoCrop(photo);
+  const position = size.width > crop.width ? photo.positionX : photo.positionY;
   $('crop-position').value = position * 100;
-  $('crop-position').disabled = (photoCrop(photo).width >= photo.width && photoCrop(photo).height >= photo.height) || state.exporting || state.importing;
+  $('crop-position').disabled = (crop.width >= size.width && crop.height >= size.height) || toolBusy();
   $('crop-position-value').textContent = Math.abs(position-.5) < .005 ? 'Centered' : `${Math.round(position*100)}%`;
   $('crop-zoom').value = photo.zoom;
-  $('crop-zoom').disabled = state.exporting || state.importing;
+  $('crop-zoom').disabled = toolBusy();
+  $('rotation-value').textContent = `${photo.rotation || 0}°`;
+  $('watermark-drag-help').hidden = state.mode !== 'final';
+  $('stage').classList.toggle('watermark-draggable',state.mode === 'final' && !!state.logo && !toolBusy());
+  updateControls();
   $('crop-zoom-value').textContent = `${Math.round(photo.zoom*100)}%`;
   const labels = {'1:1':'1:1 square','16:9':'16:9 wide','4:3':'4:3','original':'Original photo shape'};
   $('crop-shape-badge').textContent = labels[controls.aspect.value] + ' crop';
@@ -154,40 +183,57 @@ function drawPreview() {
 async function selectPhoto(id) {
   pointer = null;
   state.selected = id;
+  updateControls();
   document.querySelectorAll('.photo-tile').forEach(tile => { const selected = tile.dataset.id === id; tile.classList.toggle('active',selected); tile.setAttribute('aria-pressed',String(selected)); });
   const photo = currentPhoto(), version = ++state.previewVersion;
   release(state.image); state.image = null;
+  refreshAvailability();
   $('preview').getContext('2d').clearRect(0,0,$('preview').width,$('preview').height);
   if (!photo) return;
   $('current-name').textContent = photo.path; $('current-dimensions').textContent = '';
   $('preview-loading').hidden = false;
   try { const img = await decode(photo.file); if (version !== state.previewVersion) { release(img); return; } state.image = img; drawPreview(); }
   catch (error) { if (version === state.previewVersion) toast('Could not preview ' + photo.path + ': ' + error.message); }
-  finally { if (version === state.previewVersion) $('preview-loading').hidden = true; }
+  finally { if (version === state.previewVersion) { $('preview-loading').hidden = true; refreshAvailability(); } }
 }
 function setPosition(value) {
-  if (state.exporting || state.importing || !state.image) return;
+  if (toolBusy() || !state.image) return;
   const photo = currentPhoto(); if (!photo) return;
-  const crop=photoCrop(photo); photo[photo.width>crop.width ? 'positionX' : 'positionY'] = Math.max(0,Math.min(1,value));
+  const crop=photoCrop(photo); photo[orientedDimensions(photo).width>crop.width ? 'positionX' : 'positionY'] = Math.max(0,Math.min(1,value));
   cropChanged(photo);
 }
 function cropChanged(photo) {
   const tile = document.querySelector(`.photo-tile[data-id="${photo.id}"]`);
-  if (tile) tile.classList.toggle('adjusted',photo.zoom > 1 || Math.abs(photo.positionX-.5)>.005 || Math.abs(photo.positionY-.5)>.005);
+  if (tile) {
+    tile.classList.toggle('adjusted',!!photo.rotation || photo.zoom > 1 || Math.abs(photo.positionX-.5)>.005 || Math.abs(photo.positionY-.5)>.005);
+    tile.classList.toggle('custom-watermark',!!photo.watermarkPlacement);
+    tile.title = photo.path + (photo.watermarkPlacement ? ' · Custom watermark placement' : '');
+    tile.querySelector('img').style.transform = `rotate(${photo.rotation || 0}deg)`;
+  }
   drawPreview();
 }
 function placeCrop(photo, x, y, width, height = width) {
-  photo.positionX = photo.width > width ? Math.max(0,Math.min(1,x/(photo.width-width))) : .5;
-  photo.positionY = photo.height > height ? Math.max(0,Math.min(1,y/(photo.height-height))) : .5;
+  const size = orientedDimensions(photo);
+  photo.positionX = size.width > width ? Math.max(0,Math.min(1,x/(size.width-width))) : .5;
+  photo.positionY = size.height > height ? Math.max(0,Math.min(1,y/(size.height-height))) : .5;
+}
+function rotatePhoto(direction) {
+  const photo = currentPhoto(); if (!photo || !state.image || toolBusy()) return;
+  pointer = null;
+  const crop = photoCrop(photo), size = orientedDimensions(photo), cx = crop.x+crop.width/2, cy = crop.y+crop.height/2;
+  photo.rotation = ((photo.rotation || 0)+direction+360)%360;
+  const next = photoCrop(photo), x = direction > 0 ? size.height-cy : cy, y = direction > 0 ? cx : size.width-cx;
+  placeCrop(photo,x-next.width/2,y-next.height/2,next.width,next.height);
+  cropChanged(photo); refreshAvailability();
 }
 function setZoom(value, point) {
-  const photo = currentPhoto(); if (!photo || !state.image || state.exporting || state.importing) return;
+  const photo = currentPhoto(); if (!photo || !state.image || toolBusy()) return;
   const crop = photoCrop(photo), zoom = Math.max(1,Math.min(5,value));
   if (zoom === photo.zoom) return;
   // Keep the point under the cursor in the same part of the crop. Sliders zoom around its center.
   const inside = point && point.x >= crop.x && point.x <= crop.x+crop.width && point.y >= crop.y && point.y <= crop.y+crop.height;
   const fx = inside ? (point.x-crop.x)/crop.width : .5, fy = inside ? (point.y-crop.y)/crop.height : .5;
-  const next=cropGeometry(photo.width,photo.height,photo.positionX,photo.positionY,zoom,controls.aspect.value);
+  const next=photoCrop({...photo,zoom});
   photo.zoom = zoom;
   placeCrop(photo,crop.x+(crop.width-next.width)*fx,crop.y+(crop.height-next.height)*fy,next.width,next.height);
   cropChanged(photo);
@@ -233,7 +279,7 @@ async function importPhotos(files) {
         const canvas = document.createElement('canvas'); canvas.width = 150; canvas.height = 150;
         const crop = cropGeometry(width,height); canvas.getContext('2d').drawImage(img,crop.x,crop.y,crop.side,crop.side,0,0,150,150);
         const blob = await canvasBlob(canvas,'image/jpeg',.75), thumb = URL.createObjectURL(blob);
-        const photo = { id: crypto.randomUUID(), file, path, key, width, height, thumb, positionX: .5, positionY: .5, zoom: 1 };
+        const photo = { id: crypto.randomUUID(), file, path, key, width, height, thumb, positionX: .5, positionY: .5, zoom: 1, rotation: 0, watermarkPlacement: null };
         state.photos.push(photo); known.add(key); added++;
         const tile = document.createElement('button'); tile.className = 'photo-tile'; tile.dataset.id = photo.id; tile.title = path; tile.setAttribute('aria-label','Preview ' + path); tile.setAttribute('aria-pressed','false');
         const image = document.createElement('img'); image.src = thumb; image.alt = ''; const label = document.createElement('span'); label.textContent = file.name; tile.append(image,label); tile.addEventListener('click',()=>selectPhoto(photo.id)); $('filmstrip').append(tile);
@@ -242,7 +288,7 @@ async function importPhotos(files) {
       finally { release(img); }
       await tick();
     }
-    setStatus(added ? 'Photos ready' : 'No new photos added', `${added} added${duplicates ? ' · '+duplicates+' duplicates skipped' : ''}${errors.length ? ' · '+errors.length+' could not be read' : ''}. Choose a photo to review its square crop.`);
+    setStatus(added ? 'Photos ready' : 'No new photos added', `${added} added${duplicates ? ' · '+duplicates+' duplicates skipped' : ''}${errors.length ? ' · '+errors.length+' could not be read' : ''}. Choose a photo to review its crop.`);
     errorsList(errors); if (!state.selected && state.photos.length) await selectPhoto(state.photos[0].id);
   } finally { state.importing = false; refreshAvailability(); $('photos-input').value = ''; $('folder-input').value = ''; }
 }
@@ -291,7 +337,7 @@ async function exportPhotos() {
   state.preparingExport = false;
   if (!selected) { refreshAvailability(); return; }
   state.exporting = true; state.stop = false; $('cancel-export').textContent = 'Stop after this photo'; refreshAvailability(); $('show-exports').hidden = true; errorsList([]);
-  const photos = state.photos.map(p=>({...p})), config = settings(), logo = state.logo, errors = [], used = new Set();
+  const photos = state.photos.map(p=>({...p,watermarkPlacement:p.watermarkPlacement ? {...p.watermarkPlacement,position:p.watermarkPlacement.position ? {...p.watermarkPlacement.position} : undefined} : null})), config = settings(), logo = state.logo, errors = [], used = new Set();
   let saved = 0, processed = 0, folder = '', job = null;
   try {
     const result = await startChosenExport(selected);
@@ -355,13 +401,29 @@ $('empty').addEventListener('click',()=>{ if (!state.importing && !state.exporti
 $('empty').addEventListener('keydown',e=>{ if (e.key==='Enter' || e.key===' ') { e.preventDefault(); $('empty').click(); } });
 $('photos-input').addEventListener('change',e=>importPhotos(e.target.files)); $('folder-input').addEventListener('change',e=>importPhotos(e.target.files));
 $('logo-input').addEventListener('change',e=>loadLogo(e.target.files[0])); $('clear-logo').addEventListener('click',clearLogo);
-for (const control of Object.values(controls)) control.addEventListener('input',()=>{ updateControls(); saveSettings(); drawPreview(); });
-document.querySelectorAll('[data-corner]').forEach(button=>button.addEventListener('click',()=>{ corner = button.dataset.corner; updateControls(); saveSettings(); drawPreview(); }));
+for (const control of Object.values(controls)) control.addEventListener('input',()=>{ if (toolBusy()) return; pointer = null; updateControls(); saveSettings(); drawPreview(); refreshAvailability(); });
+function chooseCorner(value) {
+  if (toolBusy()) return;
+  pointer = null;
+  const photo = currentPhoto();
+  if (photo?.watermarkPlacement) { photo.watermarkPlacement = {corner:value}; cropChanged(photo); }
+  else { corner = value; saveSettings(); drawPreview(); }
+  updateControls();
+}
+document.querySelectorAll('[data-corner]').forEach(button=>button.addEventListener('click',()=>chooseCorner(button.dataset.corner)));
+$('placement-mode').addEventListener('change',e=>{
+  const photo = currentPhoto(); if (!photo || toolBusy()) return;
+  pointer = null;
+  photo.watermarkPlacement = e.target.value === 'custom' ? {corner} : null;
+  cropChanged(photo); updateControls();
+});
+$('rotate-left').addEventListener('click',()=>rotatePhoto(-90));
+$('rotate-right').addEventListener('click',()=>rotatePhoto(90));
 $('tab-final').addEventListener('click',()=>setMode('final')); $('tab-crop').addEventListener('click',()=>setMode('crop'));
 $('crop-position').addEventListener('input',e=>setPosition(+e.target.value/100));
 $('crop-zoom').addEventListener('input',e=>setZoom(+e.target.value));
 $('reset-crop').addEventListener('click',()=>{
-  const photo = currentPhoto(); if (!photo || !state.image || state.exporting || state.importing) return;
+  const photo = currentPhoto(); if (!photo || !state.image || toolBusy()) return;
   photo.positionX = photo.positionY = .5; photo.zoom = 1; pointer = null; cropChanged(photo);
 });
 let pointer = null;
@@ -370,21 +432,42 @@ function previewPoint(e, photo) {
   return { x: crop.x+((e.clientX-rect.left)/rect.width*frame.size-frame.x)*crop.width/frame.width, y: crop.y+((e.clientY-rect.top)/rect.height*frame.size-frame.y)*crop.height/frame.height };
 }
 $('preview').addEventListener('wheel',e=>{
-  const photo = currentPhoto(); if (state.mode !== 'crop' || !photo || !state.image || state.exporting || state.importing || pointer || !e.deltaY) return;
+  const photo = currentPhoto(); if (state.mode !== 'crop' || !photo || !state.image || toolBusy() || pointer || !e.deltaY) return;
   e.preventDefault();
   const pixels = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? $('preview').getBoundingClientRect().height : 1);
   setZoom(photo.zoom*Math.exp(-Math.max(-240,Math.min(240,pixels))*.0015),previewPoint(e,photo));
 },{ passive: false });
 $('preview').addEventListener('pointerdown',e=>{
-  const photo = currentPhoto(); if (state.mode!=='crop' || !photo || !state.image || state.exporting || state.importing || pointer || e.button !== 0) return;
+  const photo = currentPhoto(); if (!photo || !state.image || toolBusy() || pointer || e.button !== 0) return;
+  if (state.mode === 'final') {
+    if (!state.logo) return;
+    const canvas = $('preview'), rect = canvas.getBoundingClientRect(), [lw,lh] = dimensions(state.logo);
+    const box = logoGeometry(lw,lh,canvas.width,canvas.height,watermarkSettings(photo,settings()));
+    const x = (e.clientX-rect.left)*canvas.width/rect.width, y = (e.clientY-rect.top)*canvas.height/rect.height;
+    if (x < box.x || x > box.x+box.width || y < box.y || y > box.y+box.height) return;
+    pointer = { kind:'watermark', photoId:photo.id, startX:box.x, startY:box.y, clientX:e.clientX, clientY:e.clientY, scaleX:canvas.width/rect.width, scaleY:canvas.height/rect.height, spanX:canvas.width-box.width, spanY:canvas.height-box.height, id:e.pointerId };
+    canvas.setPointerCapture(e.pointerId); return;
+  }
   const crop = photoCrop(photo), rect = $('preview').getBoundingClientRect(), frame = cropViewport(photo);
-  if (crop.width >= photo.width && crop.height >= photo.height) return;
+  const size = orientedDimensions(photo);
+  if (crop.width >= size.width && crop.height >= size.height) return;
   pointer = { photoId: photo.id, startX: crop.x, startY: crop.y, clientX: e.clientX, clientY: e.clientY, scaleX: crop.width*frame.size/(rect.width*frame.width), scaleY: crop.height*frame.size/(rect.height*frame.height), id:e.pointerId };
   $('preview').setPointerCapture(e.pointerId);
 });
 function movePointer(e) {
-  if (!pointer || e.pointerId!==pointer.id || state.mode !== 'crop' || state.exporting || state.importing || !state.image) return;
+  if (!pointer || e.pointerId!==pointer.id || toolBusy() || !state.image) return;
   const photo = currentPhoto(); if (!photo || photo.id !== pointer.photoId) return;
+  if (pointer.kind === 'watermark') {
+    if (state.mode !== 'final' || !state.logo) return;
+    if (!pointer.moved && Math.hypot(e.clientX-pointer.clientX,e.clientY-pointer.clientY) < 3) return;
+    pointer.moved = true;
+    photo.watermarkPlacement = { position: {
+      x: Math.max(0,Math.min(1,(pointer.startX+(e.clientX-pointer.clientX)*pointer.scaleX)/pointer.spanX)),
+      y: Math.max(0,Math.min(1,(pointer.startY+(e.clientY-pointer.clientY)*pointer.scaleY)/pointer.spanY)),
+    } };
+    cropChanged(photo); return;
+  }
+  if (state.mode !== 'crop') return;
   // Pan the image in the same direction as the hand, using the original drag origin.
   const crop=photoCrop(photo); placeCrop(photo,pointer.startX+(pointer.clientX-e.clientX)*pointer.scaleX,pointer.startY+(pointer.clientY-e.clientY)*pointer.scaleY,crop.width,crop.height); cropChanged(photo);
 }

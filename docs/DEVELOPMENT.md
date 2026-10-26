@@ -1,12 +1,16 @@
 # Development and verification
 
 For build status, current workspace location and Windows results, read
-[SESSION_HANDOFF.md](SESSION_HANDOFF.md). The prior 1.0.3 Mac test evidence is
-43 Python tests and 39 JavaScript tests passing. On 13 October 2026, the user
+[SESSION_HANDOFF.md](SESSION_HANDOFF.md). The current source passed 43 Python
+tests and 47 JavaScript tests on 26 October 2026, including photo rotation,
+watermark dragging, independent placement and shared defaults. Headless Chrome
+checks also verified rendering pixels, encoded exports and responsive layout.
+FileCraft 1.2.0 packages these changes for macOS and Windows.
+On 13 October 2026, the user
 supplied passing Windows 10 x64 diagnostics and confirmed all three tools, saving
 files, and reopening the previous 1.0.2 app. Version 1.1.0 adds crop shape choices
-and updated tool icons. Its Mac signature and package archives were checked; tests
-and Windows device behavior still need verification.
+and updated tool icons. Its Mac signature and package archives were checked;
+Windows device behavior still needs verification.
 
 The source/browser version runs on Mac or Windows with Python 3.10+ and a modern
 browser. The Mac desktop build uses Python 3.14 and the pinned dependencies under
@@ -55,9 +59,10 @@ links, searchable text, and editable form values. They are source test assets,
 not personal exports.
 
 Automated tests and a successful build do not establish Windows or older-Mac
-device compatibility. The Mac app has native-window verification on macOS 15.6.1;
+device compatibility. The 1.2.0 Mac app has native startup, import/rotation and bundled PDF worker
+verification on macOS 15.6.1;
 the previous Windows 1.0.2 app has Windows 10 diagnostic and user workflow evidence.
-The FileCraft 1.1.0 Windows package needs a launch check.
+The FileCraft 1.2.0 Windows package needs a launch check.
 Detailed checklist cases, Windows 11 and the Windows source launcher remain unconfirmed.
 See [BUILDING_WINDOWS.md](BUILDING_WINDOWS.md) and [TESTING_WINDOWS.md](TESTING_WINDOWS.md).
 

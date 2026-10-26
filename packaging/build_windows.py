@@ -56,7 +56,7 @@ def compile_launcher(stage, icon, zig):
     manifest = BUILD / 'FileCraft.manifest'
     manifest.write_text('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity version="1.1.0.0" processorArchitecture="amd64" name="FileCraft" type="win32"/>
+  <assemblyIdentity version="1.2.0.0" processorArchitecture="amd64" name="FileCraft" type="win32"/>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3"><security><requestedPrivileges>
     <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
   </requestedPrivileges></security></trustInfo>
@@ -68,8 +68,8 @@ def compile_launcher(stage, icon, zig):
     resource.write_text(f'''1 ICON "{icon.as_posix()}"
 1 24 "{manifest.as_posix()}"
 1 VERSIONINFO
-FILEVERSION 1,1,0,0
-PRODUCTVERSION 1,1,0,0
+FILEVERSION 1,2,0,0
+PRODUCTVERSION 1,2,0,0
 FILEOS 0x40004
 FILETYPE 1
 BEGIN

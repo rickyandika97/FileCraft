@@ -7,11 +7,14 @@ const { test } = require('node:test');
 
 // Exercise the app's actual input handlers and canvas source rectangles without a browser.
 function editor(width = 1600, height = 1000) {
-  const elements = new Map(), draws = [];
-  const context2d = { drawImage: (...args) => draws.push(args), fillRect() {}, strokeRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {}, clearRect() {} };
+  const elements = new Map(), draws = [], transforms = [], stored = new Map();
+  const context2d = { drawImage: (...args) => draws.push(args), fillRect() {}, strokeRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {}, clearRect() {},
+    save: () => transforms.push(['save']), restore: () => transforms.push(['restore']),
+    translate: (...args) => transforms.push(['translate',...args]), scale: (...args) => transforms.push(['scale',...args]), rotate: (...args) => transforms.push(['rotate',...args]),
+  };
   function element(id) {
     if (!elements.has(id)) elements.set(id, {
-      value: ({ 'logo-size': 16, 'logo-opacity': 91, 'logo-margin': 3.5, resolution: 'original', format: 'jpg' })[id] || 0,
+      value: ({ 'logo-size': 16, 'logo-opacity': 91, 'logo-margin': 3.5, resolution: 'original', format: 'jpg', 'aspect-ratio': '1:1' })[id] || 0,
       options: [], firstChild: {}, classList: { toggle() {} }, handlers: {},
       addEventListener(name, fn, options) { this.handlers[name] = fn; this[name+'Options'] = options; },
       setAttribute() {}, getContext: () => context2d,
@@ -22,7 +25,7 @@ function editor(width = 1600, height = 1000) {
   }
   const sandbox = vm.createContext({
     document: { getElementById: element, querySelectorAll: () => [], querySelector: () => null, body: { classList: { toggle() {} } }, addEventListener() {} },
-    window: { addEventListener() {} }, localStorage: { getItem: () => null },
+    window: { addEventListener() {} }, localStorage: { getItem: key => stored.get(key) || null, setItem: (key,value) => stored.set(key,value) },
     fetch: async () => ({ ok: true, json: async () => ({ token: 'test' }) }), setTimeout, clearTimeout,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../app/app.js'), 'utf8'), sandbox);
@@ -34,7 +37,7 @@ function editor(width = 1600, height = 1000) {
     element('preview').handlers.wheel(event);
     return event;
   }
-  return { run, element, draws, wheel, crop: () => run('photoCrop(currentPhoto())'), photo: () => run('currentPhoto()') };
+  return { run, element, draws, transforms, stored, wheel, crop: () => run('photoCrop(currentPhoto())'), photo: () => run('currentPhoto()') };
 }
 function close(a,b) { assert.ok(Math.abs(a-b)<1e-7, `${a} != ${b}`); }
 function bounded(crop, width, height) {
@@ -153,4 +156,134 @@ test('filenames that become identical after sanitizing receive distinct numbered
   const second = app.run("exportName({path: 'Photo*.jpg'}, {format: 'jpg'}, usedNames)");
   assert.equal(first,'Photo_-square-watermarked.jpg');
   assert.equal(second,'Photo_-square-watermarked-2.jpg');
+});
+
+test('rotation is per photo, swaps original-shape export dimensions, and returns after four turns', () => {
+  const app = editor();
+  app.run("controls.aspect.value = 'original'; setMode('final')");
+  for (const [rotation,width,height] of [[90,1000,1600],[180,1600,1000],[270,1000,1600],[0,1600,1000]]) {
+    app.element('rotate-right').handlers.click();
+    assert.equal(app.photo().rotation,rotation);
+    const size = app.run('outputSize(currentPhoto(),settings())');
+    assert.equal(size.width,width); assert.equal(size.height,height);
+    assert.equal(app.element('rotation-value').textContent,`${rotation}°`);
+    close(app.photo().positionX,.5); close(app.photo().positionY,.5);
+  }
+  app.element('rotate-left').handlers.click(); assert.equal(app.photo().rotation,270);
+  app.run("state.photos.push({id:'other',width:1000,height:600,positionX:.5,positionY:.5,zoom:1}); state.selected='other'; drawPreview()");
+  assert.equal(app.photo().rotation,undefined);
+  app.run("state.selected='test'; drawPreview()"); assert.equal(app.photo().rotation,270);
+});
+
+test('rotating a zoomed crop preserves its selected content and pans within oriented bounds', () => {
+  const app = editor(); app.run('setZoom(2); placeCrop(currentPhoto(),600,100,500)');
+  app.element('rotate-right').handlers.click();
+  close(app.crop().x,400); close(app.crop().y,600); close(app.photo().zoom,2);
+  app.element('rotate-left').handlers.click(); close(app.crop().x,600); close(app.crop().y,100);
+  for (const aspect of ['1:1','16:9','4:3','original']) {
+    app.run(`controls.aspect.value = '${aspect}'`);
+    for (let n=0;n<4;n++) {
+      app.element('rotate-right').handlers.click();
+      app.run('setZoom(5); setPosition(1)');
+      const c = app.crop(), size = app.run('orientedDimensions(currentPhoto())');
+      assert.ok(c.x>=0 && c.y>=0 && c.x+c.width<=size.width+1e-7 && c.y+c.height<=size.height+1e-7);
+      const preview=app.element('preview');
+      preview.handlers.pointerdown({pointerId:1,button:0,clientX:310,clientY:320});
+      preview.handlers.pointermove({pointerId:1,clientX:9999,clientY:-9999});
+      preview.handlers.pointerup({pointerId:1});
+      close(app.crop().x,0); close(app.crop().y,size.height-c.height);
+    }
+  }
+});
+
+test('rotated export applies orientation to the photo and restores the canvas before drawing the logo', () => {
+  const app=editor(); app.run("controls.aspect.value='original'; state.logo={width:400,height:200}; setMode('final')");
+  for (const [rotation,tx,ty] of [[90,1000,0],[180,1600,1000],[270,0,1600]]) {
+    app.run(`currentPhoto().rotation=${rotation}`); app.transforms.length=0;
+    app.run("renderFinal($('preview'),state.image,currentPhoto(),settings(),state.logo,outputSide(currentPhoto(),settings()))");
+    assert.deepEqual(JSON.parse(JSON.stringify(app.transforms)),[['save'],['translate',0,0],['scale',1,1],['translate',tx,ty],['rotate',rotation*Math.PI/180],['restore']]);
+    assert.equal(app.draws.at(-2)[0].width,1600);
+    assert.equal(app.draws.at(-1)[0].width,400);
+  }
+});
+
+test('shared placement follows defaults while a photo override survives shared changes and resets explicitly', () => {
+  const app=editor();
+  app.run("state.photos.push({id:'other',width:1000,height:1000,positionX:.5,positionY:.5,zoom:1})");
+  app.element('placement-mode').handlers.change({target:{value:'custom'}});
+  app.run("chooseCorner('bl')");
+  assert.equal(app.photo().watermarkPlacement.corner,'bl');
+  assert.equal(app.run('corner'),'tl');
+  app.run("state.selected='other'; chooseCorner('tr')");
+  assert.equal(app.run('watermarkSettings(currentPhoto(),settings()).corner'),'tr');
+  app.run("state.selected='test'; drawPreview()");
+  assert.equal(app.run('watermarkSettings(currentPhoto(),settings()).corner'),'bl');
+  assert.equal(app.element('placement-mode').value,'custom');
+  app.element('placement-mode').handlers.change({target:{value:'shared'}});
+  assert.equal(app.photo().watermarkPlacement,null);
+  assert.equal(app.run('watermarkSettings(currentPhoto(),settings()).corner'),'tr');
+  assert.equal(app.element('placement-mode').value,'shared');
+});
+
+test('dragging a watermark creates only a local override, has no initial jump, and clamps to all edges', () => {
+  const app=editor(); app.run("state.logo={width:400,height:200}; setMode('final')");
+  const preview=app.element('preview');
+  const box=app.run('logoGeometry(400,200,$("preview").width,$("preview").height,settings())');
+  const x=10+(box.x+box.width/2)/preview.width*600, y=20+(box.y+box.height/2)/preview.height*600;
+  preview.handlers.pointerdown({pointerId:1,button:0,clientX:x,clientY:y});
+  preview.handlers.pointermove({pointerId:1,clientX:x+1,clientY:y+1});
+  assert.equal(app.photo().watermarkPlacement,undefined);
+  preview.handlers.pointermove({pointerId:1,clientX:x+60,clientY:y+120});
+  const moved=app.run('logoGeometry(400,200,$("preview").width,$("preview").height,watermarkSettings(currentPhoto(),settings()))');
+  close(moved.x,box.x+100); close(moved.y,box.y+200);
+  assert.equal(app.run('corner'),'tl');
+  preview.handlers.pointermove({pointerId:1,clientX:9999,clientY:9999});
+  close(app.photo().watermarkPlacement.position.x,1); close(app.photo().watermarkPlacement.position.y,1);
+  preview.handlers.pointermove({pointerId:1,clientX:-9999,clientY:-9999});
+  close(app.photo().watermarkPlacement.position.x,0); close(app.photo().watermarkPlacement.position.y,0);
+  preview.handlers.pointercancel({pointerId:1});
+  preview.handlers.pointermove({pointerId:1,clientX:9999,clientY:9999});
+  close(app.photo().watermarkPlacement.position.x,0);
+  app.run("chooseCorner('br')"); assert.equal(app.photo().watermarkPlacement.position,undefined);
+  assert.equal(app.photo().watermarkPlacement.corner,'br');
+});
+
+test('watermark dragging ignores blank photo areas, other pointers, and busy states', () => {
+  const app=editor(); app.run("state.logo={width:400,height:200}; setMode('final')");
+  const preview=app.element('preview');
+  preview.handlers.pointerdown({pointerId:1,button:0,clientX:500,clientY:500});
+  preview.handlers.pointermove({pointerId:1,clientX:50,clientY:50});
+  assert.equal(app.photo().watermarkPlacement,undefined);
+  preview.handlers.pointerdown({pointerId:1,button:0,clientX:60,clientY:60});
+  preview.handlers.pointermove({pointerId:2,clientX:500,clientY:500});
+  assert.equal(app.photo().watermarkPlacement,undefined);
+  app.run('state.preparingExport=true; refreshAvailability()');
+  preview.handlers.pointermove({pointerId:1,clientX:500,clientY:500});
+  assert.equal(app.photo().watermarkPlacement,undefined);
+  assert.equal(app.element('rotate-left').disabled,true);
+  app.element('rotate-left').handlers.click(); assert.equal(app.photo().rotation,undefined);
+});
+
+test('custom watermark positions scale from preview to export for every crop shape and rotation', () => {
+  const app=editor(2400,1600); app.run('state.logo={width:400,height:200}; currentPhoto().watermarkPlacement={position:{x:.23,y:.76}}');
+  for (const aspect of ['1:1','16:9','4:3','original']) for (const rotation of [0,90,180,270]) {
+    app.run(`controls.aspect.value='${aspect}'; currentPhoto().rotation=${rotation}; setMode('final')`);
+    const preview=app.element('preview'), small=app.draws.at(-1).slice(1), pw=preview.width, ph=preview.height;
+    app.run("renderFinal($('preview'),state.image,currentPhoto(),settings(),state.logo,outputSide(currentPhoto(),settings()))");
+    const full=app.draws.at(-1).slice(1);
+    close(small[0]/(pw-small[2]),.23); close(small[1]/(ph-small[3]),.76);
+    close(full[0]/(preview.width-full[2]),.23); close(full[1]/(preview.height-full[3]),.76);
+  }
+});
+
+test('saved defaults include crop shape and shared corner without persisting photo overrides', () => {
+  const app=editor();
+  app.run("controls.aspect.options=[{value:'16:9'}]; controls.aspect.value='16:9'; chooseCorner('tr'); currentPhoto().watermarkPlacement={corner:'bl'}; saveSettings()");
+  const saved=JSON.parse(app.stored.get('filecraft-settings'));
+  assert.equal(saved.aspect,'16:9'); assert.equal(saved.corner,'tr'); assert.equal(saved.watermarkPlacement,undefined);
+  app.run("controls.aspect.value='1:1'; corner='tl'; restoreSettings()");
+  assert.equal(app.run('controls.aspect.value'),'16:9'); assert.equal(app.run('corner'),'tr');
+  // Export config keeps its captured ratio even if the live UI changes later.
+  const size=app.run("outputSize(currentPhoto(),{...settings(),aspect:'4:3'})");
+  assert.equal(size.width,1333); assert.equal(size.height,1000);
 });

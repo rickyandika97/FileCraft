@@ -1,8 +1,26 @@
-# FileCraft — progress handoff, 13 October 2026
+# FileCraft — progress handoff, 26 October 2026
+
+## FileCraft 1.2.0 changes
+
+The source editor now supports per-photo 90° left/right rotation in both preview
+modes, watermark placement overrides per photo, and dragging the logo in Final
+preview. Photos inherit the shared corner until customized; selecting **Use shared
+placement** removes the override. Size, opacity and corner margins remain shared.
+Photo adjustments last for the current batch. Shared defaults, including crop
+shape, persist in browser settings.
+
+Validation on 26 October 2026: 47 JavaScript tests and 43 Python tests passed.
+Headless Chrome checks verified real pointer dragging, independent photo
+placement, rotation pixel orientation, encoded batch PNG dimensions and watermark
+pixels, and desktop/mobile layout. Export checks captured the real encoded POST
+bodies with a simulated folder picker and export service. These source checks
+do not establish Windows device behavior. Mac native and package checks are
+recorded below. The Mac app, DMG, Windows portable app and matching source
+archives have been rebuilt for these changes.
 
 ## Current project
 
-The current app build is **FileCraft 1.1.0**. The name covers all three tools:
+The current app build is **FileCraft 1.2.0**. The name covers all three tools:
 photo/PDF compression, photo cropping/watermarking, and PDF assembly/splitting.
 The interface, FC logo, favicon, native icons, desktop titles, source launchers,
 package identifiers, settings paths, diagnostics, notices and download names have
@@ -17,12 +35,12 @@ that embed a previous folder path; use `.build-venv/bin/python` directly.
 | Artifact | Location |
 | --- | --- |
 | Mac app | `dist/FileCraft.app` |
-| Mac installer | `release/FileCraft-1.1.0-arm64.dmg` |
-| Source download | `release/FileCraft-1.1.0-source.zip` |
+| Mac installer | `release/FileCraft-1.2.0-arm64.dmg` |
+| Source download | `release/FileCraft-1.2.0-source.zip` |
 | Mac/source checksums | `release/SHA256SUMS.txt` |
-| Windows portable download | `release/FileCraft-1.1.0-windows-x64-portable.zip` |
-| Windows source download | `release/FileCraft-1.1.0-windows-x64-source.zip` |
-| Windows checksums | `release/FileCraft-1.1.0-windows-x64-SHA256SUMS.txt` |
+| Windows portable download | `release/FileCraft-1.2.0-windows-x64-portable.zip` |
+| Windows source download | `release/FileCraft-1.2.0-windows-x64-source.zip` |
+| Windows checksums | `release/FileCraft-1.2.0-windows-x64-SHA256SUMS.txt` |
 | Unpacked Windows app | `dist/windows-x64/FileCraft/` |
 | GitHub source upload folder | `release/github-source/FileCraft/` |
 
@@ -30,18 +48,35 @@ Previous artifacts and their original build records are preserved locally under
 `.local/rebrand-20261013/`; they are excluded from Git and source downloads.
 Earlier cleanup history also stays under `.local/`.
 
-## FileCraft 1.1.0 build verification
+## FileCraft 1.2.0 build verification — 26 October 2026
+
+- Mac version 1.2.0, build 6; deep/strict ad-hoc signature and DMG checksum verified.
+- Rebuilt native Mac app launched on macOS 15.6.1; chooser, photo import and
+  left/right rotation in Final preview and Adjust crop were checked visually.
+- Bundled Mac PDF worker dependency check, preparation, 1400px preview,
+  form-preserving assembly and compression passed with synthetic fixtures.
+- Windows x64 GUI executable: PE architecture/subsystem, string and numeric
+  version 1.2.0, manifest 1.2.0.0 and runtime metadata verified. ZIP CRC passed.
+- Packaged editor assets match the source. Both source ZIPs and the prepared
+  GitHub upload folder were regenerated from the final source; checksums updated.
+- Current source tests: 47 JavaScript and 43 Python passing. Browser pixel checks
+  include all crop shapes, quarter-turn rotations and 1×/2×/5× zoom levels.
+- The Windows 1.2.0 build still requires launch, diagnostic, save and reopen checks
+  on a Windows PC, including the new placement and drag cases in TESTING_WINDOWS.md.
+- Changes are committed locally; GitHub push and Release publication are separate.
+
+## Previous FileCraft 1.1.0 build verification
 
 Version 1.1.0 adds selectable 1:1, 16:9, 4:3 and original photo crop shapes,
-and updated tool icons. Built on 13 October 2026 from the current source.
+and updated tool icons. Built on 13 October 2026 from the source at that time.
 
 - Mac app version 1.1.0, build 5; deep/strict ad-hoc signature verified.
 - Mac DMG checksum verified.
 - Windows x64 portable ZIP built; archive CRC and package checks passed.
 - Packaged Mac and Windows interfaces contain the updated crop and PDF icons and
   crop shape choices. Release checksums were regenerated.
-- The 1.1.0 automated test suite and real Windows device workflow have not been
-  rerun. The Windows package still needs launch, diagnostic, save and reopen checks.
+- At that build, the 1.1.0 automated test suite and real Windows device workflow
+  had not been rerun. The Windows package still needs launch, diagnostic, save and reopen checks.
 
 ## Prior validation of FileCraft 1.0.3
 

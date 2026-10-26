@@ -1,14 +1,14 @@
-FileCraft 1.1.0 — Windows x64 test build
+FileCraft 1.2.0 — Windows x64 test build
 
 For a 64-bit Intel/AMD PC running Windows 10 or Windows 11.
-Built on an Apple Silicon Mac. This 1.1.0 package needs a Windows launch
+Built on an Apple Silicon Mac. This 1.2.0 package needs a Windows launch
 check. The previous 1.0.2 package passed Windows 10 x64 diagnostics, and the user
 confirmed all three tools, saving files, and reopening. See docs/SESSION_HANDOFF.md
 in the source download for the test record and unconfirmed cases.
 
 GET STARTED
 
-1. Copy FileCraft-1.1.0-windows-x64-portable.zip to your Windows PC.
+1. Copy FileCraft-1.2.0-windows-x64-portable.zip to your Windows PC.
 2. Right-click the ZIP and choose Extract All. Keep the entire folder together.
 3. Open FileCraft.exe in the extracted FileCraft folder.
    It should open its own window. Python and PDF tools are included.
@@ -34,6 +34,11 @@ PLEASE TEST
 - Add a folder of photos, including a folder name with spaces or Indonesian text.
 - Shrink a photo and a PDF; confirm the saved copies meet the selected size limit.
 - Crop and watermark portrait and landscape photos.
+- Rotate a photo 90° left/right in both preview modes and confirm its export.
+- Keep photo A on shared placement, customize photo B to a different corner,
+  then drag B's logo in Final preview. Export both and verify their positions.
+- Change the shared corner on A; B should keep its custom position. Choose
+  Use shared placement on B and confirm it follows A again.
 - Combine PDF and image pages, rearrange them, then split/extract selected pages.
 - Choose a save folder; cancel once, then choose a folder and export.
 - Use Open folder after export; it should open Windows Explorer.
